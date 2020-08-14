@@ -94,7 +94,7 @@ type StructMessage struct {
 	// Fields represents one or more fields included in the
 	// field message, and these fields will be encoded as
 	// structured log entries.
-	Fields ElementFields
+	Fields ElementObject
 }
 
 // FormatStandard formats the log entry message as a string and appends

@@ -25,6 +25,7 @@ package santa
 import (
 	"math"
 	"strconv"
+	"time"
 )
 
 // ElementType represents the native data type of an element. The
@@ -68,11 +69,6 @@ const (
 	// For details, please refer to the comment section of the Element
 	// structure.
 	TypeBytes
-
-	// TypeFields represents the data type of the element as the Field
-	// slice. For details, please refer to the comment section of the
-	// Element structure and Field structure.
-	TypeFields
 
 	// TypeValue represents the native data type of the element is
 	// a value type that has implemented the relevant formatter interface.
@@ -259,6 +255,32 @@ func String(name string, value string) Field {
 	}
 }
 
+// Time returns the value of a field with a given name and a given
+// time value. For details, see the comments section of the Field
+// structure.
+func Time(name string, value time.Time) Field {
+	return Field {
+		Element: Element {
+			Type: TypeInt,
+			Number: value.UnixNano(),
+		},
+		Name: name,
+	}
+}
+
+// Error returns the value of a field with a given name and a given
+// error value. For details, see the comments section of the Field
+// structure.
+func Error(name string, value error) Field {
+	return Field {
+		Element: Element {
+			Type: TypeString,
+			String: value.Error(),
+		},
+		Name: name,
+	}
+}
+
 // Bytes returns the value of a field with a given name and a given
 // []byte value. For details, see the comments section of the Field
 // structure.
@@ -304,6 +326,10 @@ func Value(name string, value interface { }) Field {
 		return Boolean(name, v)
 	case string:
 		return String(name, v)
+	case time.Time:
+		return Time(name, v)
+	case error:
+		return Error(name, v)
 	case []byte:
 		return Bytes(name, v)
 	}
@@ -317,14 +343,14 @@ func Value(name string, value interface { }) Field {
 	}
 }
 
-// ElementFields represents an element data type whose native data type
+// ElementObject represents an element data type whose native data type
 // is []Fields. For details, please refer to the comment section of the
 // Element structure.
-type ElementFields []Field
+type ElementObject []Field
 
 // FormatJSON formats the element as a JSON string, then appends to the
 // given buffer slice, and finally returns the appended buffer slice.
-func (e ElementFields) FormatJSON(buffer []byte) []byte {
+func (e ElementObject) FormatJSON(buffer []byte) []byte {
 	buffer = append(buffer, '{')
 	last := len(e) - 1
 
@@ -342,11 +368,40 @@ func (e ElementFields) FormatJSON(buffer []byte) []byte {
 	return append(buffer, '}')
 }
 
-// Fields returns the value of a field with a given name and a given
-// []Fields value. For details, see the comments section of the Field
+// Object returns the value of a field with a given name and a given
+// []Field value. For details, see the comments section of the Field
 // structure.
-func Fields(name string, fields ...Field) Field {
-	return Value(name, ElementFields(fields))
+func Object(name string, fields ...Field) Field {
+	return Value(name, ElementObject(fields))
+}
+
+// ElementObjects represents an element data type whose native data
+// type is []ElementObject. For details, please refer to the comment
+// section of the Element structure.
+type ElementObjects []ElementObject
+
+// FormatJSON formats the element as a JSON string, then appends to the
+// given buffer slice, and finally returns the appended buffer slice.
+func (e ElementObjects) FormatJSON(buffer []byte) []byte {
+	buffer = append(buffer, '[')
+	last := len(e) - 1
+
+	for index := 0; index < len(e); index++ {
+		buffer = e[index].FormatJSON(buffer)
+
+		if index < last {
+			buffer = append(buffer, ", "...)
+		}
+	}
+
+	return append(buffer, ']')
+}
+
+// Objects returns the value of a field with a given name and a given
+// []ElementObject value. For details, see the comments section of the
+// Field structure.
+func Objects(name string, values ...ElementObject) Field {
+	return Value(name, ElementObjects(values))
 }
 
 // ElementInts represents an element data type whose native data type
@@ -525,4 +580,33 @@ func (e ElementStrings) FormatJSON(buffer []byte) []byte {
 // structure.
 func Strings(name string, values []string) Field {
 	return Value(name, ElementStrings(values))
+}
+
+// ElementTimes represents an element data type whose native data type
+// is []time.Time. For details, please refer to the comment section of
+// the Element structure.
+type ElementTimes []time.Time
+
+// FormatJSON formats the element as a JSON string, then appends to the
+// given buffer slice, and finally returns the appended buffer slice.
+func (e ElementTimes) FormatJSON(buffer []byte) []byte {
+	buffer = append(buffer, '[')
+	last := len(e) - 1
+
+	for index := 0; index < len(e); index++ {
+		buffer = strconv.AppendInt(buffer, e[index].UnixNano(), 10)
+
+		if index < last {
+			buffer = append(buffer, ", "...)
+		}
+	}
+
+	return append(buffer, ']')
+}
+
+// Times returns the value of a field with a given name and a given
+// []time.Time value. For details, see the comments section of the Field
+// structure.
+func Times(name string, values []time.Time) Field {
+	return Value(name, ElementTimes(values))
 }
