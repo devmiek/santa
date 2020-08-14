@@ -31,7 +31,7 @@ logger.Infos("Hello World!",
 )
 ```
 
-In the above sample code, a structured logger with default options is used to print a structured log message with INFO log level to the standard output device (os.Stdout, os.Stderr). If you format the output manually, it should look like this:
+In the above sample code, a structured logger with default options is used to print a structured log message with INFO log level to the standard output device (`os.Stdout`, `os.Stderr`). If you format the output manually, it should look like this:
 
 ```json
 {
@@ -81,9 +81,9 @@ Unlike the structured logger, the template logger uses a standard encoder to enc
 
 ```go
 logger, err := santa.NewTemplateOption().
-	UseEncoding(
-		santa.NewEncodingOption().
-			UseJSON(),
+    UseEncoding(
+        santa.NewEncodingOption().
+            UseJSON(),
     ).Build()
 ```
 
@@ -96,8 +96,52 @@ option.Encoding.Kind = santa.EncoderJSON
 logger, err := option.Build()
 ```
 
-The sample code above uses the template logger built with default options to print out a template log entry with the log level INFO to the standard output device (os.Stdout, os.Stderr). If everything is normal, you should see something similar to the following:
+The sample code above uses the template logger built with default options to print out a template log entry with the log level INFO to the standard output device (`os.Stdout`, `os.Stderr`). If everything is normal, you should see something similar to the following:
 
-```json
-2020-08-13T21:56:30.0719939+08:00 main.go:43 [INFO] My name is santa and my age is 10.
+```text
+2020-08-13T21:56:30.0719939+08:00 main.go:18 [INFO] My name is santa and my age is 10.
 ```
+
+### Standard Logger
+If your application requires a custom log message structure or only string log messages, you can use the standard logger.
+
+Unlike structured loggers and template loggers, standard loggers provide log message output APIs for applications that accept any log message values that have implemented the `santa.Message` interface, which means you can easily customize one or more log message structures.
+
+```go
+// Create a standard logger instance with default
+// optional values.
+logger, err := santa.NewStandard()
+
+if err != nil {
+    println(err)
+    return
+}
+
+// Loggers should be explicitly closed when they
+// are no longer in use.
+defer logger.Close()
+
+logger.Info(santa.StringMessage("Hello World!"))
+```
+
+In the above sample code, a standard logger instance is constructed using the default optional values, and then a log entry of only string messages with a log level of INFO is output to the standard output device (`os.Stdout`, `os.Stderr`). If everything is normal, you should see something similar to the following:
+
+```text
+2020-08-14T16:09:58.9404613+08:00 main.go:43 [INFO] Hello World!
+```
+
+In fact, structured loggers and template loggers are implemented based on standard loggers. The log message output API provided by the structured logger uses `santa.StructMessage` as the log message structure; the log message output API provided by the template logger uses `santa.TemplateMessage` as the log message structure.
+
+If the application requires high log entry output performance, it may be a good choice to use the `santa.StringMessage` log message structure as the log message value of the log message output API provided by the standard logger. Under normal circumstances, the structured logger is also very fast, but requires some coding overhead for the structured fields.
+
+It is worth noting that if your application needs to customize the log message structure, the customized log message structure also needs to implement the formatter interface of the corresponding encoder, otherwise the encoder does not know how to format the custom log message structure. Among them, the formatter interface of the standard encoder is `santa.StandardFormatter`, and the format interface of the JSON encoder is `santa.JSONFormatter`.
+
+Similarly, your application can also customize one or more encoders, as long as these encoders have implemented the `santa.Encoder` interface. If the encoder needs to support multiple log message structures, you need to define a formatter interface and let all supported log message structures implement it.
+
+### Others
+Santa’s design focuses on scalability, and performance is second. This means that many of Santa’s functions can be easily customized, including but not limited to loggers, log messages, samplers, encoders, and synchronizers. For details, please refer to the comment section of each function in the Santa source code.
+
+## Performance
+It is worth noting that Santa focuses on scalability when designing, performance is secondary, but performance is still concerned.
+
+Santa strives to be closer to the actual production environment in the benchmark performance test process, because the performance in the production environment is more meaningful.
