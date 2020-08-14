@@ -234,3 +234,19 @@ func NewStructOption() *StructOption {
 func NewStruct() (*StructLogger, error) {
 	return NewStructOption().Build()
 }
+
+// NewStructBenchmark creates and returns an instance of a structured logger
+// suitable for benchmark performance testing and any errors encountered.
+func NewStructBenchmark(sampling bool) (*StructLogger, error) {
+	option := NewStructOption()
+	option.Encoding.DisableSourceLocation = true
+	option.Outputting.UseDiscard()
+	option.ErrorOutputting.UseDiscard()
+	option.UseLevel(LevelDebug)
+
+	if !sampling {
+		option.DisableSampling()
+	}
+
+	return option.Build()
+}

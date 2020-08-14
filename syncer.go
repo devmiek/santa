@@ -26,6 +26,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sync"
 )
 
 // Syncer is the public interface of the synchronizer.
@@ -119,6 +120,7 @@ type StandardSyncer struct {
 	writer io.Writer
 	buffer []byte
 	capacity int
+	mutex *sync.Mutex
 }
 
 // Write writes the data of a given buffer slice to a specific storage
@@ -129,12 +131,21 @@ type StandardSyncer struct {
 // Finally, it returns the number of bytes actually written and any
 // errors encountered.
 func (s *StandardSyncer) Write(buffer []byte) (int, error) {
+	if s.mutex != nil {
+		s.mutex.Lock()
+	}
+
 	if s.buffer != nil {
 		if (len(s.buffer) + len(buffer)) >= s.capacity {
 			size, err := s.writer.Write(s.buffer)
 
 			if err != nil {
 				s.buffer = s.buffer[size : ]
+
+				if s.mutex != nil {
+					s.mutex.Unlock()
+				}
+
 				return 0, err
 			}
 
@@ -142,10 +153,21 @@ func (s *StandardSyncer) Write(buffer []byte) (int, error) {
 		}
 
 		s.buffer = append(s.buffer, buffer...)
+
+		if s.mutex != nil {
+			s.mutex.Unlock()
+		}
+
 		return len(buffer), nil
 	}
 
-	return s.writer.Write(buffer)
+	size, err := s.writer.Write(buffer)
+
+	if s.mutex != nil {
+		s.mutex.Unlock()
+	}
+
+	return size, err
 }
 
 // Sync writes the internally cached data to a specific storage device.
@@ -154,10 +176,18 @@ func (s *StandardSyncer) Write(buffer []byte) (int, error) {
 //
 // Finally, any errors encountered are returned.
 func (s *StandardSyncer) Sync() error {
+	if s.mutex != nil {
+		s.mutex.Lock()
+	}
+
 	if len(s.buffer) > 0 {
 		_, err := s.writer.Write(s.buffer)
 
 		if err != nil {
+			if s.mutex != nil {
+				s.mutex.Unlock()
+			}
+
 			return err
 		}
 	}
@@ -165,10 +195,20 @@ func (s *StandardSyncer) Sync() error {
 	handle, ok := s.writer.(*os.File)
 
 	if !ok {
+		if s.mutex != nil {
+			s.mutex.Unlock()
+		}
+
 		return nil
 	}
 
-	return handle.Sync()
+	err := handle.Sync()
+
+	if s.mutex != nil {
+		s.mutex.Unlock()
+	}
+
+	return err
 }
 
 // Close automatically flushes the internal cache once, and then releases
@@ -190,6 +230,14 @@ type StandardSyncerOption struct {
 	// implements io.Writer. If not provided, the default value is
 	// ioutil.Discard.
 	Writer io.Writer
+
+	// DisableMutex indicates whether to disable the write mutex
+	// protection inside the synchronizer. If a particular storage
+	// device is thread-safe, disabling the internal write mutex
+	// protection can improve performance. If disabled, the internal
+	// cache will also be disabled. If not provided, the default value
+	// is false.
+	DisableMutex bool
 }
 
 // UseCacheCapacity uses the given capacity as the value of the option
@@ -216,19 +264,25 @@ func (o *StandardSyncerOption) UseWriter(writer io.Writer) *StandardSyncerOption
 // Build builds and returns a standard synchronizer instance.
 func (o *StandardSyncerOption) Build() (*StandardSyncer, error) {
 	var buffer []byte
+	var mutex *sync.Mutex
 
-	if o.CacheCapacity < 1024 && o.CacheCapacity > 0 {
-		o.CacheCapacity = 1024
-	}
+	if !o.DisableMutex {
+		if o.CacheCapacity < 1024 && o.CacheCapacity > 0 {
+			o.CacheCapacity = 1024
+		}
+	
+		if o.CacheCapacity > 0 {
+			buffer = make([]byte, 0, o.CacheCapacity)
+		}
 
-	if o.CacheCapacity > 0 {
-		buffer = make([]byte, 0, o.CacheCapacity)
+		mutex = &sync.Mutex { }
 	}
 
 	return &StandardSyncer {
 		writer: o.Writer,
 		buffer: buffer,
 		capacity: o.CacheCapacity,
+		mutex: mutex,
 	}, nil
 }
 
@@ -254,7 +308,7 @@ func NewStandardSyncer() (*StandardSyncer, error) {
 //
 // Please note that file synchronizers are not thread-safe.
 type FileSyncer struct {
-	StandardSyncer
+	*StandardSyncer
 }
 
 // Close automatically flushes the internal cache once, and then releases
@@ -318,7 +372,7 @@ func (o *FileSyncerOption) Build() (*FileSyncer, error) {
 	}
 
 	return &FileSyncer {
-		StandardSyncer: *syncer,
+		StandardSyncer: syncer,
 	}, nil
 }
 
@@ -346,20 +400,23 @@ func NewFileSyncer() (*FileSyncer, error) {
 //
 // Please note that file synchronizers are not thread-safe.
 type DiscardSyncer struct {
-	StandardSyncer
+	*StandardSyncer
 }
 
 // NewDiscardSyncer creates an instance of a discard synchronizer
 // using the default optional values.
 func NewDiscardSyncer() (*DiscardSyncer, error) {
-	syncer, err := NewStandardSyncerOption().
-		UseCacheCapacity(0).Build()
+	option := NewStandardSyncerOption()
+	option.Writer = ioutil.Discard
+	option.DisableMutex = true
+
+	syncer, err := option.Build()
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &DiscardSyncer {
-		StandardSyncer: *syncer,
+		StandardSyncer: syncer,
 	}, nil
 }

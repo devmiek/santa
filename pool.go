@@ -142,6 +142,49 @@ func NewEntryPool() *EntryPool {
 	}
 }
 
+// ExporterBufferPool is a structure that contains instances of cached
+// exporter buffer.
+//
+// The exporter buffer pool allows the allocated and used exporter buffer
+// instances to be cached in the pool for use by other hyper-threading
+// contexts, which will significantly reduce the number of heap memory
+// allocations.
+//
+// Note that any instance of exporter buffer should use this pool
+// allocation.
+type ExporterBufferPool struct {
+	pool *sync.Pool
+}
+
+// New gets and returns a reusable exporter buffer instance from the
+// buffer pool. If not, then allocate and return a new exporter buffer
+// instance.
+//
+// Please note that the exporter buffer instance obtained and returned
+// may be dirty, and the pool is not responsible for cleaning it.
+func (p *ExporterBufferPool) New() []byte {
+	return p.pool.Get().([]byte)
+}
+
+// Free returns the given exporter buffer instance to the buffer pool.
+// After the refund, the exporter buffer instance is not allowed to be
+// used again, otherwise the behavior is undefined.
+func (p *ExporterBufferPool) Free(buffer []byte) {
+	p.pool.Put(buffer)
+}
+
+// NewExporterBufferPool creates and returns a log entry buffer pool
+// instance.
+func NewExporterBufferPool() *ExporterBufferPool {
+	return &ExporterBufferPool {
+		pool: &sync.Pool {
+			New: func() interface { } {
+				return make([]byte, 0, 1024)
+			},
+		},
+	}
+}
+
 // pool is a structural variable that contains default instances of
 // various pools. These pool instances are automatically created when
 // the application is initialized and shared globally.
@@ -151,6 +194,9 @@ var pool struct {
 		structure *StructMessagePool
 		template *TemplateMessagePool
 	}
+	buffer struct {
+		exporter *ExporterBufferPool
+	}
 }
 
 // init is used to initialize the variable pool.
@@ -158,4 +204,5 @@ func init() {
 	pool.entry = NewEntryPool()
 	pool.message.template = NewTemplateMessagePool()
 	pool.message.structure = NewStructMessagePool()
+	pool.buffer.exporter = NewExporterBufferPool()
 }

@@ -22,8 +22,6 @@
 
 package santa
 
-import "sync"
-
 // Exporter is a public interface for exporters.
 //
 // The exporter uses a specific encoder to encode log entries into
@@ -78,8 +76,6 @@ type StandardExporter struct {
 	span LevelSpan
 	encoder Encoder
 	syncer Syncer
-	buffer []byte
-	mutex sync.Mutex
 }
 
 // Export encodes a given log entry into specific data using a specific
@@ -92,32 +88,30 @@ func (e *StandardExporter) Export(entry *Entry) error {
 		return nil
 	}
 
-	e.mutex.Lock()
-
 	if e.encoder == nil {
-		e.mutex.Unlock()
 		return nil
 	}
 
-	buffer, err := e.encoder.Encode(e.buffer[ : 0], entry)
+	buffer := pool.buffer.exporter.New()
+	buffer, err := e.encoder.Encode(buffer[ : 0], entry)
 
 	if err != nil {
-		e.mutex.Unlock()
+		pool.buffer.exporter.Free(buffer)
 		return err
 	}
 
 	if buffer == nil {
-		e.mutex.Unlock()
+		pool.buffer.exporter.Free(buffer)
 		return nil
 	}
 
 	if e.syncer == nil {
-		e.mutex.Unlock()
+		pool.buffer.exporter.Free(buffer)
 		return nil
 	}
 
 	_, err = e.syncer.Write(buffer)
-	e.mutex.Unlock()
+	pool.buffer.exporter.Free(buffer)
 
 	return err
 }
@@ -130,9 +124,6 @@ func (e *StandardExporter) Export(entry *Entry) error {
 //
 // Finally, any errors encountered are returned.
 func (e *StandardExporter) Sync() error {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
 	return e.syncer.Sync()
 }
 
@@ -141,9 +132,6 @@ func (e *StandardExporter) Sync() error {
 //
 // Finally, any errors encountered are returned.
 func (e *StandardExporter) Close() error {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
 	return e.syncer.Close()
 }
 
@@ -199,7 +187,6 @@ func (o *StandardExporterOption) Build() (*StandardExporter, error) {
 		span: o.Span,
 		encoder: o.Encoder,
 		syncer: o.Syncer,
-		buffer: make([]byte, 0, 4096),
 	}, nil
 }
 

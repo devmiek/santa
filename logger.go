@@ -453,6 +453,14 @@ type EncodingOption struct {
 	// If not provided, the default value is the default optional value for
 	// the specific encoder type.
 	Option interface { }
+
+	// DisableSourceLocation represents whether it is necessary to obtain
+	// and set the output API call source location for each log entry, so
+	// that the application can track the source of each log entry. It is
+	// worth noting that obtaining the source of log entries requires more
+	// expensive performance overhead. If not provided, the default value
+	// is false.
+	DisableSourceLocation bool
 }
 
 // UseStandard uses the standard encoder (EncoderStandard constant) as the
@@ -513,9 +521,13 @@ func (o *EncodingOption) UseJSONOption(option *JSONEncoderOption) *EncodingOptio
 func (o *EncodingOption) Build() (Encoder, error) {
 	switch o.Kind {
 	case EncoderStandard:
-		return o.Option.(*StandardEncoderOption).Build()
+		option := o.Option.(*StandardEncoderOption)
+		option.EncodeSourceLocation = !o.DisableSourceLocation
+		return option.Build()
 	case EncoderJSON:
-		return o.Option.(*JSONEncoderOption).Build()
+		option := o.Option.(*JSONEncoderOption)
+		option.EncodeSourceLocation = !o.DisableSourceLocation
+		return option.Build()
 	default:
 		return nil, ErrorKindInvalid
 	}
@@ -908,4 +920,21 @@ func NewStandardOption() *StandardOption {
 // default optional values.
 func NewStandard() (*StandardLogger, error) {
 	return NewStandardOption().Build()
+}
+
+// NewStandardBenchmark creates and returns an instance of a standard
+// logger suitable for benchmark performance testing and any errors
+// encountered.
+func NewStandardBenchmark(sampling bool) (*StandardLogger, error) {
+	option := NewStandardOption()
+	option.Encoding.DisableSourceLocation = true
+	option.Outputting.UseDiscard()
+	option.ErrorOutputting.UseDiscard()
+	option.UseLevel(LevelDebug)
+
+	if !sampling {
+		option.DisableSampling()
+	}
+
+	return option.Build()
 }

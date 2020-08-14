@@ -372,7 +372,13 @@ func (e ElementObject) FormatJSON(buffer []byte) []byte {
 // []Field value. For details, see the comments section of the Field
 // structure.
 func Object(name string, fields ...Field) Field {
-	return Value(name, ElementObject(fields))
+	return Field {
+		Element: Element {
+			Type: TypeValue,
+			Interface: ElementObject(fields),
+		},
+		Name: name,
+	}
 }
 
 // ElementObjects represents an element data type whose native data
@@ -401,7 +407,13 @@ func (e ElementObjects) FormatJSON(buffer []byte) []byte {
 // []ElementObject value. For details, see the comments section of the
 // Field structure.
 func Objects(name string, values ...ElementObject) Field {
-	return Value(name, ElementObjects(values))
+	return Field {
+		Element: Element {
+			Type: TypeValue,
+			Interface: ElementObjects(values),
+		},
+		Name: name,
+	}
 }
 
 // ElementInts represents an element data type whose native data type
@@ -430,7 +442,12 @@ func (e ElementInts) FormatJSON(buffer []byte) []byte {
 // []int64 value. For details, see the comments section of the Field
 // structure.
 func Ints(name string, values []int64) Field {
-	return Value(name, ElementInts(values))
+	return Field {
+		Element: Element {
+			Type: TypeValue,
+			Interface: ElementInts(values),
+		},
+	}
 }
 
 // ElementUint64s represents an element data type whose native data type
@@ -459,7 +476,12 @@ func (e ElementUint64s) FormatJSON(buffer []byte) []byte {
 // []uint64 value. For details, see the comments section of the Field
 // structure.
 func Uints(name string, values []uint64) Field {
-	return Value(name, ElementUint64s(values))
+	return Field {
+		Element: Element {
+			Type: TypeValue,
+			Interface: ElementUint64s(values),
+		},
+	}
 }
 
 // ElementFloat32s represents an element data type whose native data type
@@ -489,7 +511,12 @@ func (e ElementFloat32s) FormatJSON(buffer []byte) []byte {
 // []float32 value. For details, see the comments section of the Field
 // structure.
 func Float32s(name string, values []float32) Field {
-	return Value(name, ElementFloat32s(values))
+	return Field {
+		Element: Element {
+			Type: TypeValue,
+			Interface: ElementFloat32s(values),
+		},
+	}
 }
 
 // ElementFloat64s represents an element data type whose native data type
@@ -519,7 +546,12 @@ func (e ElementFloat64s) FormatJSON(buffer []byte) []byte {
 // []float64 value. For details, see the comments section of the Field
 // structure.
 func Float64s(name string, values []float64) Field {
-	return Value(name, ElementFloat64s(values))
+	return Field {
+		Element: Element {
+			Type: TypeValue,
+			Interface: ElementFloat64s(values),
+		},
+	}
 }
 
 // ElementBooleans represents an element data type whose native data type
@@ -548,7 +580,12 @@ func (e ElementBooleans) FormatJSON(buffer []byte) []byte {
 // []bool value. For details, see the comments section of the Field
 // structure.
 func Booleans(name string, values []bool) Field {
-	return Value(name, ElementBooleans(values))
+	return Field {
+		Element: Element {
+			Type: TypeValue,
+			Interface: ElementBooleans(values),
+		},
+	}
 }
 
 // ElementStrings represents an element data type whose native data type
@@ -579,7 +616,12 @@ func (e ElementStrings) FormatJSON(buffer []byte) []byte {
 // []string value. For details, see the comments section of the Field
 // structure.
 func Strings(name string, values []string) Field {
-	return Value(name, ElementStrings(values))
+	return Field {
+		Element: Element {
+			Type: TypeValue,
+			Interface: ElementStrings(values),
+		},
+	}
 }
 
 // ElementTimes represents an element data type whose native data type
@@ -608,5 +650,10 @@ func (e ElementTimes) FormatJSON(buffer []byte) []byte {
 // []time.Time value. For details, see the comments section of the Field
 // structure.
 func Times(name string, values []time.Time) Field {
-	return Value(name, ElementTimes(values))
+	return Field {
+		Element: Element {
+			Type: TypeValue,
+			Interface: ElementTimes(values),
+		},
+	}
 }
