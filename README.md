@@ -145,3 +145,41 @@ Santa’s design focuses on scalability, and performance is second. This means t
 It is worth noting that Santa focuses on scalability when designing, performance is secondary, but performance is still concerned.
 
 Santa strives to be closer to the actual production environment in the benchmark performance test process, because the performance in the production environment is more meaningful.
+
+The benchmark performance test was conducted on a VM instance, which is equipped with a 4-core AMD EPYC™ ROME processor and 16 GB of DDR4 memory. The processor clocked at 2.6GHz and adopts AMD64 architecture. The benchmark performance test is performed by the benchmark program running on the VM instance using all processor cores, and the benchmark program uses the Golang 1.15 runtime. The benchmark program is run 10 times in total, and the final result of each indicator is the average of all benchmark samples of the indicator. The test method is as follows:
+
+### Structured Logger
+For the structured logger, the benchmark program uses the `santa.NewStructBenchmark` function to build an instance of the structured logger for benchmark testing.
+
+The benchmark program will continuously call the `santa.(*StructLogger).Infos` function to print out different log messages, each of which contains a different description text and 10 fields (including 5 complex fields). The benchmark test results are as follows:
+
+| Encoder | Sampling | Time | Objects Allocated |
+| :------ | :------: | :--: | :---------------: |
+| JSON | True | 241 ns/op | 7 allocs/op |
+| JSON | False | 681 ns/op | 8 allocs/op |
+| Standard | True | 245 ns/op | 7 allocs/op |
+| Standard | False | 749 ns/op | 8 allocs/op |
+
+### Template Logger
+For the template logger, the benchmark program uses the `santa.NewTemplateBenchmark` function to build an instance of the template logger for benchmark testing.
+
+The benchmark program will continuously call the `santa.(*TemplateLogger).Infof` function to print out different log messages, including a different template string and 10 commonly used template parameters. The benchmark test results are as follows:
+
+| Encoder | Sampling | Time | Objects Allocated |
+| :------ | :------: | :--: | :---------------: |
+| JSON | True | 82.6 ns/op | 1 allocs/op |
+| JSON | False | 375 ns/op | 3 allocs/op |
+| Standard | True | 84.5 ns/op | 1 allocs/op |
+| Standard | False | 448 ns/op | 3 allocs/op |
+
+### Standard Logger
+For the standard logger, the benchmark program uses `santa.NewStandardBenchmark` to build an instance of the standard logger for benchmark testing.
+
+The benchmark program will continuously call the `santa.(*StandardLogger).Info` function to print out different `santa.StringMessage` log messages. The benchmark test results are as follows:
+
+| Encoder | Sampling | Time | Objects Allocated |
+| :------ | :------: | :--: | :---------------: |
+| JSON | True | 35.9 ns/op | 0 allocs/op |
+| JSON | False | 69.2 ns/op | 1 allocs/op |
+| Standard | True | 35.8 ns/op | 0 allocs/op |
+| Standard | False | 118 ns/op | 1 allocs/op |
