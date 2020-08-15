@@ -208,4 +208,4 @@ Everyone is welcome to become a Santa contributor, please refer to the contribut
 
 <hr>
 
-Released under the [MIT License](LICENSE.txt).
+Released under the [MIT License](LICENSE).
