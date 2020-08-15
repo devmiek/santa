@@ -92,26 +92,26 @@ func (e *StandardExporter) Export(entry *Entry) error {
 		return nil
 	}
 
-	buffer := pool.buffer.exporter.New()
-	buffer, err := e.encoder.Encode(buffer[ : 0], entry)
+	pointer := pool.buffer.exporter.New()
+	buffer, err := e.encoder.Encode((*pointer)[ : 0], entry)
 
 	if err != nil {
-		pool.buffer.exporter.Free(buffer)
+		pool.buffer.exporter.Free(pointer)
 		return err
 	}
 
 	if buffer == nil {
-		pool.buffer.exporter.Free(buffer)
+		pool.buffer.exporter.Free(pointer)
 		return nil
 	}
 
 	if e.syncer == nil {
-		pool.buffer.exporter.Free(buffer)
+		pool.buffer.exporter.Free(pointer)
 		return nil
 	}
 
 	_, err = e.syncer.Write(buffer)
-	pool.buffer.exporter.Free(buffer)
+	pool.buffer.exporter.Free(pointer)
 
 	return err
 }
@@ -194,11 +194,11 @@ func (o *StandardExporterOption) Build() (*StandardExporter, error) {
 // standard exporter option with default optional values.
 func NewStandardExporterOption() *StandardExporterOption {
 	// The synchronizer does not need to be closed manually, because
-	// the default standard synchronizer writes data to ioutil.Discard.
+	// the default discard synchronizer writes data to ioutil.Discard.
 	//
 	// The error is discarded and usually does not occur.
 	encoder, _ := NewStandardEncoder()
-	syncer, _ := NewStandardSyncer()
+	syncer, _ := NewDiscardSyncer()
 
 	return &StandardExporterOption {
 		Span: LevelSpan {

@@ -118,37 +118,23 @@ func (l Level) AppendFormat(buffer []byte) []byte {
 	}
 }
 
-// ParseFrom parse the log level from the name.
-func (l Level) ParseFrom(name string) error {
+// ParseLevel parses and returns the log level value of the given log
+// level name and any errors encountered.
+func ParseLevel(name string) (Level, error) {
 	switch strings.ToLower(name) {
 	case "debug":
-		l = LevelDebug
+		return LevelDebug, nil
 	case "info":
-		l = LevelInfo
+		return LevelInfo, nil
 	case "warning":
-		l = LevelWarning
+		return LevelWarning, nil
 	case "error":
-		l = LevelError
+		return LevelError, nil
 	case "fatal":
-		l = LevelFatal
+		return LevelFatal, nil
 	default:
-		return ErrorLevelInvalid
+		return 0, ErrorLevelInvalid
 	}
-
-	return nil
-}
-
-// ParseLevel parse the log level from the name.
-func ParseLevel(name string) (Level, error) {
-	var level Level
-
-	err := level.ParseFrom(name)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return level, nil
 }
 
 // LevelSpan is a structure that contains the log level span.

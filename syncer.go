@@ -217,7 +217,7 @@ func (s *StandardSyncer) Sync() error {
 //
 // Finally, any errors encountered are returned.
 func (s *StandardSyncer) Close() error {
-	s.Sync()
+	_ = s.Sync()
 	return nil
 }
 

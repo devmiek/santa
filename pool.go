@@ -162,14 +162,14 @@ type ExporterBufferPool struct {
 //
 // Please note that the exporter buffer instance obtained and returned
 // may be dirty, and the pool is not responsible for cleaning it.
-func (p *ExporterBufferPool) New() []byte {
-	return p.pool.Get().([]byte)
+func (p *ExporterBufferPool) New() *[]byte {
+	return p.pool.Get().(*[]byte)
 }
 
 // Free returns the given exporter buffer instance to the buffer pool.
 // After the refund, the exporter buffer instance is not allowed to be
 // used again, otherwise the behavior is undefined.
-func (p *ExporterBufferPool) Free(buffer []byte) {
+func (p *ExporterBufferPool) Free(buffer *[]byte) {
 	p.pool.Put(buffer)
 }
 
@@ -179,7 +179,8 @@ func NewExporterBufferPool() *ExporterBufferPool {
 	return &ExporterBufferPool {
 		pool: &sync.Pool {
 			New: func() interface { } {
-				return make([]byte, 0, 1024)
+				buffer := make([]byte, 0, 2048)
+				return &buffer
 			},
 		},
 	}
