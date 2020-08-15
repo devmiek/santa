@@ -168,9 +168,11 @@ The benchmark program will continuously call the `santa.(*StructLogger).Infos` f
 | Encoder | Sampling | Time | Objects Allocated |
 | :------ | :------: | :--: | :---------------: |
 | JSON | True | 241 ns/op | 7 allocs/op |
-| JSON | False | 681 ns/op | 8 allocs/op |
+| JSON | False | 681 ns/op | 7 allocs/op |
 | Standard | True | 245 ns/op | 7 allocs/op |
-| Standard | False | 749 ns/op | 8 allocs/op |
+| Standard | False | 749 ns/op | 7 allocs/op |
+
+The benchmark program uses multiple complex fields (including but not limited to: nested objects, arrays, etc.) that are not allocated in advance each time a structured logger is used to output log entries, which will result in multiple object allocations.
 
 ### Template Logger
 For the template logger, the benchmark program uses the `santa.NewTemplateBenchmark` function to build an instance of the template logger for benchmark testing.
@@ -180,9 +182,9 @@ The benchmark program will continuously call the `santa.(*TemplateLogger).Infof`
 | Encoder | Sampling | Time | Objects Allocated |
 | :------ | :------: | :--: | :---------------: |
 | JSON | True | 82.6 ns/op | 1 allocs/op |
-| JSON | False | 375 ns/op | 3 allocs/op |
+| JSON | False | 375 ns/op | 2 allocs/op |
 | Standard | True | 84.5 ns/op | 1 allocs/op |
-| Standard | False | 448 ns/op | 3 allocs/op |
+| Standard | False | 448 ns/op | 2 allocs/op |
 
 ### Standard Logger
 For the standard logger, the benchmark program uses `santa.NewStandardBenchmark` to build an instance of the standard logger for benchmark testing.
@@ -192,9 +194,11 @@ The benchmark program will continuously call the `santa.(*StandardLogger).Info` 
 | Encoder | Sampling | Time | Objects Allocated |
 | :------ | :------: | :--: | :---------------: |
 | JSON | True | 35.9 ns/op | 0 allocs/op |
-| JSON | False | 69.2 ns/op | 1 allocs/op |
+| JSON | False | 69.2 ns/op | 0 allocs/op |
 | Standard | True | 35.8 ns/op | 0 allocs/op |
-| Standard | False | 118 ns/op | 1 allocs/op |
+| Standard | False | 118 ns/op | 0 allocs/op |
+
+As can be seen from the benchmark performance test results listed above, the time consumed for each API call when using the standard encoder is increased compared to the JSON encoder. This is because the standard encoder uses `time.RFCRFC3339Nano` as the time formatting layout style by default, which will result in the need for time string formatting.
 
 ## Development Status: Alpha
 Santa is currently under internal development and testing, which means that all APIs provided for applications are unstable. These APIs may contain errors and API signatures and implementations may be modified in future versions. Unless necessary, it is not recommended to use Santa for production applications immediately to avoid accidents.
