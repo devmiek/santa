@@ -1,6 +1,13 @@
 # :santa: santa
 A simple, fast and extensible structured logging implemented in Go.
 
+## Installation
+Installing the Santa package is very simple, usually you only need to execute:
+
+```shell
+go get -u github.com/nobody-night/santa
+```
+
 ## Getting Started
 With Santa, you can easily implement a simple, fast, and easily expandable structured logging function in your application, without having to pay attention to log output, encoding, and storage.
 
@@ -12,8 +19,7 @@ In the following, I will briefly introduce you how to use several common loggers
 In a modern production environment, the most frequently used log entry structure may be JSON-encoded log entry data. This can be done easily in Santa using a structured logger:
 
 ```go
-// Create a structured logger instance using default
-// optional values.
+// Create a structured logger instance using default optional values.
 logger, err := santa.NewStruct()
 
 if err != nil {
@@ -21,8 +27,7 @@ if err != nil {
     return
 }
 
-// Loggers should be explicitly closed when they
-// are no longer in use.
+// Loggers should be explicitly closed when they are no longer in use.
 defer logger.Close()
 
 logger.Infos("Hello World!",
@@ -59,8 +64,7 @@ If your application does not need to record one or more log fields, or does not 
 Compared with the structured logger, the template logger provides an easier-to-use string formatting API for applications, just like using the `fmt.Sprintf` function. It is worth noting that because the template logger needs to format log messages according to template strings and parameters, its log entry output performance is lower than other types of loggers, because the template logger still uses the `fmt.Sprintf` function to Format the log message.
 
 ```go
-// Create a template logger instance with default
-// optional values.
+// Create a template logger instance with default optional values.
 logger, err := santa.NewTemplate()
 
 if err != nil {
@@ -68,8 +72,7 @@ if err != nil {
     return
 }
 
-// Loggers should be explicitly closed when they
-// are no longer in use.
+// Loggers should be explicitly closed when they are no longer in use.
 defer logger.Close()
 
 logger.Infof("My name is %s and my age is %d.", "santa", 10)
@@ -92,6 +95,17 @@ logger, err := santa.NewTemplateOption().
 ```go
 option := santa.NewTemplateOption()
 option.Encoding.Kind = santa.EncoderJSON
+option.Encoding.Option = santa.NewJSONEncoderOption()
+
+logger, err := option.Build()
+```
+
+The more convenient option style is:
+
+```go
+option := santa.NewTemplateOption()
+option.Encoding.UseJSON()
+// You can also: `option.Encoding.UseJSONOption()`.
 
 logger, err := option.Build()
 ```
@@ -108,8 +122,7 @@ If your application requires a custom log message structure or only string log m
 Unlike structured loggers and template loggers, standard loggers provide log message output APIs for applications that accept any log message values that have implemented the `santa.Message` interface, which means you can easily customize one or more log message structures.
 
 ```go
-// Create a standard logger instance with default
-// optional values.
+// Create a standard logger instance with default optional values.
 logger, err := santa.NewStandard()
 
 if err != nil {
@@ -117,8 +130,7 @@ if err != nil {
     return
 }
 
-// Loggers should be explicitly closed when they
-// are no longer in use.
+// Loggers should be explicitly closed when they are no longer in use.
 defer logger.Close()
 
 logger.Info(santa.StringMessage("Hello World!"))
@@ -183,3 +195,17 @@ The benchmark program will continuously call the `santa.(*StandardLogger).Info` 
 | JSON | False | 69.2 ns/op | 1 allocs/op |
 | Standard | True | 35.8 ns/op | 0 allocs/op |
 | Standard | False | 118 ns/op | 1 allocs/op |
+
+## Development Status: Alpha
+Santa is currently under internal development and testing, which means that all APIs provided for applications are unstable. These APIs may contain errors and API signatures and implementations may be modified in future versions. Unless necessary, it is not recommended to use Santa for production applications immediately to avoid accidents.
+
+## Contribute
+Everyone is welcome to become a Santa contributor, please refer to the contribution guidelines and code of conduct. If you encounter a problem while using Santa, please don’t hesitate to create a new issue on the issue tracker, and Santa’s maintainer will confirm it and help resolve it as soon as possible.
+
+## Precautions
+- The benchmark performance test is carried out by simulating a common production environment in a specific experimental environment. The actual performance may change due to different environments, so the data is for reference only.
+- The benchmark performance test may not be updated with the iteration of the Santa package version, so the performance test data does not represent the performance of the latest version of Santa, and the data is for reference only.
+
+<hr>
+
+Released under the [MIT License](LICENSE.txt).
