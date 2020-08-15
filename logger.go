@@ -925,8 +925,18 @@ func NewStandard() (*StandardLogger, error) {
 // NewStandardBenchmark creates and returns an instance of a standard
 // logger suitable for benchmark performance testing and any errors
 // encountered.
-func NewStandardBenchmark(sampling bool) (*StandardLogger, error) {
+func NewStandardBenchmark(sampling bool, encoder string) (*StandardLogger, error) {
 	option := NewStandardOption()
+
+	switch encoder {
+	case EncoderStandard:
+		option.Encoding.UseStandard()
+	case EncoderJSON:
+		option.Encoding.UseJSON()
+	default:
+		return nil, ErrorKindInvalid
+	}
+
 	option.Encoding.DisableSourceLocation = true
 	option.Outputting.UseDiscard()
 	option.ErrorOutputting.UseDiscard()

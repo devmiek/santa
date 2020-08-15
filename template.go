@@ -230,3 +230,29 @@ func NewTemplateOption() *TemplateOption {
 func NewTemplate() (*TemplateLogger, error) {
 	return NewTemplateOption().Build()
 }
+
+// NewTemplateBenchmark creates and returns an instance of a template logger
+// suitable for benchmark performance testing and any errors encountered.
+func NewTemplateBenchmark(sampling bool, encoder string) (*TemplateLogger, error) {
+	option := NewTemplateOption()
+
+	switch encoder {
+	case EncoderStandard:
+		option.Encoding.UseStandard()
+	case EncoderJSON:
+		option.Encoding.UseJSON()
+	default:
+		return nil, ErrorKindInvalid
+	}
+
+	option.Encoding.DisableSourceLocation = true
+	option.Outputting.UseDiscard()
+	option.ErrorOutputting.UseDiscard()
+	option.UseLevel(LevelDebug)
+
+	if !sampling {
+		option.DisableSampling()
+	}
+
+	return option.Build()
+}

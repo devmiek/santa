@@ -227,7 +227,7 @@ func Float64(name string, value float64) Field {
 // bool value. For details, see the comments section of the Field
 // structure.
 func Boolean(name string, value bool) Field {
-	var number uint8
+	var number int64
 
 	if value {
 		number = 1
@@ -236,7 +236,7 @@ func Boolean(name string, value bool) Field {
 	return Field {
 		Element: Element {
 			Type: TypeBoolean,
-			Number: int64(number),
+			Number: number,
 		},
 		Name: name,
 	}
@@ -447,6 +447,7 @@ func Ints(name string, values []int64) Field {
 			Type: TypeValue,
 			Interface: ElementInts(values),
 		},
+		Name: name,
 	}
 }
 
@@ -481,6 +482,7 @@ func Uints(name string, values []uint64) Field {
 			Type: TypeValue,
 			Interface: ElementUint64s(values),
 		},
+		Name: name,
 	}
 }
 
@@ -516,6 +518,7 @@ func Float32s(name string, values []float32) Field {
 			Type: TypeValue,
 			Interface: ElementFloat32s(values),
 		},
+		Name: name,
 	}
 }
 
@@ -551,6 +554,7 @@ func Float64s(name string, values []float64) Field {
 			Type: TypeValue,
 			Interface: ElementFloat64s(values),
 		},
+		Name: name,
 	}
 }
 
@@ -585,6 +589,7 @@ func Booleans(name string, values []bool) Field {
 			Type: TypeValue,
 			Interface: ElementBooleans(values),
 		},
+		Name: name,
 	}
 }
 
@@ -621,6 +626,7 @@ func Strings(name string, values []string) Field {
 			Type: TypeValue,
 			Interface: ElementStrings(values),
 		},
+		Name: name,
 	}
 }
 
@@ -655,5 +661,6 @@ func Times(name string, values []time.Time) Field {
 			Type: TypeValue,
 			Interface: ElementTimes(values),
 		},
+		Name: name,
 	}
 }

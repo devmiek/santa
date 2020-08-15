@@ -237,8 +237,18 @@ func NewStruct() (*StructLogger, error) {
 
 // NewStructBenchmark creates and returns an instance of a structured logger
 // suitable for benchmark performance testing and any errors encountered.
-func NewStructBenchmark(sampling bool) (*StructLogger, error) {
+func NewStructBenchmark(sampling bool, encoder string) (*StructLogger, error) {
 	option := NewStructOption()
+
+	switch encoder {
+	case EncoderStandard:
+		option.Encoding.UseStandard()
+	case EncoderJSON:
+		option.Encoding.UseJSON()
+	default:
+		return nil, ErrorKindInvalid
+	}
+
 	option.Encoding.DisableSourceLocation = true
 	option.Outputting.UseDiscard()
 	option.ErrorOutputting.UseDiscard()
