@@ -166,7 +166,7 @@ For the structured logger, the benchmark program uses the `santa.NewStructBenchm
 The benchmark program will continuously call the `santa.(*StructLogger).Infos` function to print out different log messages, each of which contains a different description text and 10 fields (including 5 complex fields). The benchmark test results are as follows:
 
 | Encoder | Sampling | Time | Objects Allocated |
-| :------ | :------: | :--: | :---------------: |
+| :------ | :------: | :----------: | :---------------: |
 | JSON | True | 241 ns/op | 7 allocs/op |
 | JSON | False | 681 ns/op | 7 allocs/op |
 | Standard | True | 245 ns/op | 7 allocs/op |
@@ -174,13 +174,19 @@ The benchmark program will continuously call the `santa.(*StructLogger).Infos` f
 
 The benchmark program uses multiple complex fields (including but not limited to: nested objects, arrays, etc.) that are not allocated in advance each time a structured logger is used to output log entries, which will result in multiple object allocations.
 
+If only 2 non-complex fields are printed out:
+
+| Encoder | Sampling | Time | Objects Allocated |
+| :------ | :------: | :----------: | :---------------: |
+| JSON | False | 102 ns/op | 1 allocs/op |
+
 ### Template Logger
 For the template logger, the benchmark program uses the `santa.NewTemplateBenchmark` function to build an instance of the template logger for benchmark testing.
 
 The benchmark program will continuously call the `santa.(*TemplateLogger).Infof` function to print out different log messages, including a different template string and 10 commonly used template parameters. The benchmark test results are as follows:
 
 | Encoder | Sampling | Time | Objects Allocated |
-| :------ | :------: | :--: | :---------------: |
+| :------ | :------: | :----------: | :---------------: |
 | JSON | True | 82.6 ns/op | 1 allocs/op |
 | JSON | False | 375 ns/op | 2 allocs/op |
 | Standard | True | 84.5 ns/op | 1 allocs/op |
@@ -192,7 +198,7 @@ For the standard logger, the benchmark program uses `santa.NewStandardBenchmark`
 The benchmark program will continuously call the `santa.(*StandardLogger).Info` function to print out different `santa.StringMessage` log messages. The benchmark test results are as follows:
 
 | Encoder | Sampling | Time | Objects Allocated |
-| :------ | :------: | :--: | :---------------: |
+| :------ | :------: | :----------: | :---------------: |
 | JSON | True | 35.9 ns/op | 0 allocs/op |
 | JSON | False | 69.2 ns/op | 0 allocs/op |
 | Standard | True | 35.8 ns/op | 0 allocs/op |
