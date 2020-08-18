@@ -128,8 +128,8 @@ func (e Element) FormatJSON(buffer []byte) []byte {
 	case TypeUint:
 		return strconv.AppendUint(buffer, uint64(e.Number), 10)
 	case TypeFloat32:
-		return strconv.AppendFloat(buffer, math.Float64frombits(
-			uint64(e.Number)), 'f', -1, 32)
+		return strconv.AppendFloat(buffer, float64(math.Float32frombits(
+			uint32(e.Number))), 'f', -1, 32)
 	case TypeFloat64:
 		return strconv.AppendFloat(buffer, math.Float64frombits(
 			uint64(e.Number)), 'f', -1, 64)

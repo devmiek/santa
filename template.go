@@ -139,6 +139,14 @@ func (o *TemplateOption) UseLevel(level Level) *TemplateOption {
 	return o
 }
 
+// UseHook appends the given Hook value to the Hook option slice. For details,
+// see the comment section of the Hook option. Then return to the option
+// instance itself.
+func (o *TemplateOption) UseHook(hook Hook) *TemplateOption {
+	o.Hooks = append(o.Hooks, hook)
+	return o
+}
+
 // UseSampling uses the given sampling option as the value of option Sampling.
 // For details, please refer to the comment section of the Sampling option.
 // Then return to the option instance itself.

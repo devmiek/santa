@@ -96,7 +96,7 @@ func (l *Logger) output(level Level, message Message) error {
 	}
 
 	for index := 0; index < len(l.hooks); index++ {
-		err := l.hooks[index].Print(l, entry)
+		err := l.hooks[index].Print(entry)
 
 		if err != nil {
 			pool.entry.Free(entry)
@@ -735,6 +735,19 @@ type StandardOption struct {
 	// section of the FlushingOption structure. If not provided, the
 	// default value depends on the type of logger.
 	Flushing FlushingOption
+
+	// Hooks represent a set of log entry hooks, and each log entry to be
+	// output will be passed to each log entry hook so that the log entry
+	// has the opportunity to process it before output. For example, one or
+	// more log entry hooks can match each log entry and intercept the
+	// output or perform other processing. If not provided, no log entry
+	// hooks are used by default.
+	//
+	// For details, see the comment section of the Hook interface.
+	//
+	// Please note that this option slice will be reused during the build
+	// process, and any side effects of external modifications are undefined.
+	Hooks []Hook
 }
 
 // UseName uses the given name as the value of the option Name. For details,
@@ -750,6 +763,14 @@ func (o *StandardOption) UseName(name string) *StandardOption {
 // return to the option instance itself.
 func (o *StandardOption) UseLevel(level Level) *StandardOption {
 	o.Level = level
+	return o
+}
+
+// UseHook appends the given Hook value to the Hook option slice. For details,
+// see the comment section of the Hook option. Then return to the option
+// instance itself.
+func (o *StandardOption) UseHook(hook Hook) *StandardOption {
+	o.Hooks = append(o.Hooks, hook)
 	return o
 }
 

@@ -42,7 +42,7 @@ type Hook interface {
 	//
 	// Hook instance can also use this process to clean up maintained
 	// state and open resources.
-	Close(logger *Logger) error
+	Close() error
 
 	// Print handles the printed log entries. This function will
 	// print the log entry in the bound logger instance currently
@@ -52,11 +52,11 @@ type Hook interface {
 	// the given log entry will be cancelled.
 	//
 	// Hook instances can modify log entries during this process.
-	Print(logger *Logger, entry *Entry) error	
+	Print(entry *Entry) error	
 }
 
 // SimpleHookHandler is the type of handler function of simple Hook.
-type SimpleHookHandler func(logger *Logger, entry *Entry) error
+type SimpleHookHandler func(entry *Entry) error
 
 // SimpleHook is a structure that contains a Hook processing function.
 //
@@ -80,13 +80,13 @@ func NewSimpleHook(handler SimpleHookHandler) *SimpleHook {
 
 // Close handles the closing of the logger instance, and simple Hook
 // does not perform any processing on it.
-func (h *SimpleHook) Close(logger *Logger) *Logger {
+func (h *SimpleHook) Close() error {
 	return nil
 }
 
 // Print handles the printing of log entries on the logger instance,
 // but the real processor is the processing function bound to the
 // simple Hook instance.
-func (h *SimpleHook) Print(logger *Logger, entry *Entry) error {
-	return h.handler(logger, entry)
+func (h *SimpleHook) Print(entry *Entry) error {
+	return h.handler(entry)
 }
