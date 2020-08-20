@@ -53,7 +53,11 @@ func TestSpinLock(t *testing.T) {
 		go handler(times)
 	}
 
+	waitGroup.Add(1)
+
 	go func() {
+		defer waitGroup.Done()
+		
 		locker.LockAndSuspend()
 
 		assert.False(t, locker.TryLock(), "Unexpectedly lock")
