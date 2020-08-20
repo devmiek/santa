@@ -26,7 +26,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"sync"
 )
 
 // Syncer is the public interface of the synchronizer.
@@ -120,7 +119,7 @@ type StandardSyncer struct {
 	writer io.Writer
 	buffer []byte
 	capacity int
-	mutex *sync.Mutex
+	mutex *SpinLock
 }
 
 // Write writes the data of a given buffer slice to a specific storage
@@ -177,7 +176,7 @@ func (s *StandardSyncer) Write(buffer []byte) (int, error) {
 // Finally, any errors encountered are returned.
 func (s *StandardSyncer) Sync() error {
 	if s.mutex != nil {
-		s.mutex.Lock()
+		s.mutex.LockAndSuspend()
 	}
 
 	if len(s.buffer) > 0 {
@@ -185,7 +184,7 @@ func (s *StandardSyncer) Sync() error {
 
 		if err != nil {
 			if s.mutex != nil {
-				s.mutex.Unlock()
+				s.mutex.UnlockAndResume()
 			}
 
 			return err
@@ -196,7 +195,7 @@ func (s *StandardSyncer) Sync() error {
 
 	if !ok {
 		if s.mutex != nil {
-			s.mutex.Unlock()
+			s.mutex.UnlockAndResume()
 		}
 
 		return nil
@@ -205,7 +204,7 @@ func (s *StandardSyncer) Sync() error {
 	err := handle.Sync()
 
 	if s.mutex != nil {
-		s.mutex.Unlock()
+		s.mutex.UnlockAndResume()
 	}
 
 	return err
@@ -264,7 +263,7 @@ func (o *StandardSyncerOption) UseWriter(writer io.Writer) *StandardSyncerOption
 // Build builds and returns a standard synchronizer instance.
 func (o *StandardSyncerOption) Build() (*StandardSyncer, error) {
 	var buffer []byte
-	var mutex *sync.Mutex
+	var mutex *SpinLock
 
 	if !o.DisableMutex {
 		if o.CacheCapacity < 1024 && o.CacheCapacity > 0 {
@@ -275,7 +274,7 @@ func (o *StandardSyncerOption) Build() (*StandardSyncer, error) {
 			buffer = make([]byte, 0, o.CacheCapacity)
 		}
 
-		mutex = &sync.Mutex { }
+		mutex = NewSpinLock()
 	}
 
 	return &StandardSyncer {
