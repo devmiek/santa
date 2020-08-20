@@ -26,6 +26,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"runtime"
 )
 
 // Syncer is the public interface of the synchronizer.
@@ -95,7 +96,8 @@ type SyncerOption struct {
 	// must be set to 0, otherwise the cache capacity must be greater
 	// than or equal to 1,024 bytes.
 	//
-	// If not provided, the default is 32 KB.
+	// If not provided, the default value is 32 KB * the number of
+	// logical processors.
 	CacheCapacity int
 }
 
@@ -103,7 +105,7 @@ type SyncerOption struct {
 // default optional value.
 func NewSyncerOption() SyncerOption {
 	return SyncerOption {
-		CacheCapacity: 1024 * 32,
+		CacheCapacity: (1024 * 32) * runtime.NumCPU(),
 	}
 }
 
