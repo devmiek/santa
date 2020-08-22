@@ -187,7 +187,8 @@ Normally, the production environment uses files on the local hard disk to store 
 
 | Encoder | Sampling | Time | Objects Allocated |
 | :------ | :------: | :----------: | :---------------: |
-| JSON | False | 789 ns/op | 3 allocs/op |
+| JSON | True | 89.7 ns/op | 1 allocs/op |
+| JSON | False | 453 ns/op | 1 allocs/op |
 
 ### Template Logger
 For the template logger, the benchmark program uses the `santa.NewTemplateBenchmark` function to build an instance of the template logger for benchmark testing.
