@@ -258,6 +258,8 @@ func NewStructBenchmark(sampling bool, encoder string) (*StructLogger, error) {
 	}
 
 	option.Encoding.DisableSourceLocation = true
+	option.Flushing.Interval = 0
+	
 	option.Outputting.UseDiscard()
 	option.ErrorOutputting.UseDiscard()
 	option.UseLevel(LevelDebug)

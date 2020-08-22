@@ -26,6 +26,7 @@ import (
 	"runtime"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // SpinLock is the structure of the spin lock instance.
@@ -67,6 +68,8 @@ func (l *SpinLock) Lock() {
 			return
 		}
 
+		// After every 100 preemption failures, the processor is yielded
+		// to run other coroutines that are queued.
 		if (count % 100) != 0 {
 			runtime.Gosched()
 			continue
@@ -74,11 +77,22 @@ func (l *SpinLock) Lock() {
 
 		l.condition.L.Lock()
 
+		// If the lock is suspended, the current coroutine is suspended
+		// until the lock is restored from the suspension.
 		if atomic.LoadInt32(&l.status) == 2 {
 			l.condition.Wait()
 		}
 
 		l.condition.L.Unlock()
+
+		// If the preemption fails more than 10,000 times, the current
+		// coroutine will be interrupted for 10 milliseconds to avoid
+		// taking up more CPU time. This is to alleviate the side effects
+		// of accidentally holding lock ownership for a long time.
+
+		if count >= 10000 {
+			time.Sleep(time.Millisecond * 10)
+		}
 	}
 }
 
@@ -90,12 +104,26 @@ func (l *SpinLock) Unlock() {
 // LockAndSuspend obtains the ownership of the lock, then suspends the
 // preemption of the ownership of the lock, and returns after success.
 func (l *SpinLock) LockAndSuspend() {
-	for {
+	for count := 1; ; count++ {
 		if atomic.CompareAndSwapInt32(&l.status, 0, 2) {
 			break
 		}
 
-		runtime.Gosched()
+		// After every 100 preemption failures, the processor is yielded
+		// to run other coroutines that are queued.
+		if (count % 100) != 0 {
+			runtime.Gosched()
+			continue
+		}
+
+		// If the preemption fails more than 10,000 times, the current
+		// coroutine will be interrupted for 10 milliseconds to avoid
+		// taking up more CPU time. This is to alleviate the side effects
+		// of accidentally holding lock ownership for a long time.
+
+		if count >= 10000 {
+			time.Sleep(time.Millisecond * 10)
+		}
 	}
 }
 
@@ -104,6 +132,8 @@ func (l *SpinLock) LockAndSuspend() {
 func (l *SpinLock) UnlockAndResume() {
 	l.condition.L.Lock()
 
+	// If the unlocking is successful, all the coroutines that try to
+	// seize the lock are awakened. Otherwise, the behavior is undefined.
 	if atomic.CompareAndSwapInt32(&l.status, 2, 0) {
 		l.condition.Broadcast()
 	}

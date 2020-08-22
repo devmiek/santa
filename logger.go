@@ -960,6 +960,8 @@ func NewStandardBenchmark(sampling bool, encoder string) (*StandardLogger, error
 	}
 
 	option.Encoding.DisableSourceLocation = true
+	option.Flushing.Interval = 0
+	
 	option.Outputting.UseDiscard()
 	option.ErrorOutputting.UseDiscard()
 	option.UseLevel(LevelDebug)

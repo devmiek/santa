@@ -254,6 +254,8 @@ func NewTemplateBenchmark(sampling bool, encoder string) (*TemplateLogger, error
 	}
 
 	option.Encoding.DisableSourceLocation = true
+	option.Flushing.Interval = 0
+	
 	option.Outputting.UseDiscard()
 	option.ErrorOutputting.UseDiscard()
 	option.UseLevel(LevelDebug)
