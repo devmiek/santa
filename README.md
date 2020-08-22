@@ -160,7 +160,9 @@ It is worth noting that Santa focuses on scalability when designing, performance
 
 Santa strives to be closer to the actual production environment in the benchmark performance test process, because the performance in the production environment is more meaningful.
 
-The benchmark performance test was conducted on a VM instance, which is equipped with a 4-core AMD EPYC™ ROME processor and 16 GB of DDR4 memory. The processor clocked at 2.6GHz and adopts AMD64 architecture. The benchmark performance test is performed by the benchmark program running on the VM instance using all processor cores, and the benchmark program uses the Golang 1.15 runtime. The benchmark program is run 10 times in total, and the final result of each indicator is the average of all benchmark samples of the indicator. The test method is as follows:
+The benchmark performance test was conducted on a VM instance, which is equipped with a 4-core AMD EPYC™ ROME processor and 16 GB of DDR4 memory. The processor clocked at 2.6GHz and adopts AMD64 architecture. The benchmark performance test is performed by the benchmark program running on the VM instance using all processor cores, and the benchmark program uses the Golang 1.15 runtime.
+
+The benchmark program of each test item will be run 10 times, and the final result of each indicator is the minimum value of all benchmark samples of the indicator. The test method is as follows:
 
 ### Structured Logger
 For the structured logger, the benchmark program uses the `santa.NewStructBenchmark` function to build an instance of the structured logger for benchmark testing.
@@ -209,8 +211,8 @@ The benchmark program will continuously call the `santa.(*StandardLogger).Info` 
 
 | Encoder | Sampling | Time | Objects Allocated |
 | :------ | :------: | :----------: | :---------------: |
-| JSON | True | 35.9 ns/op | 0 allocs/op |
-| JSON | False | 69.2 ns/op | 0 allocs/op |
+| JSON | True | 32.2 ns/op | 0 allocs/op |
+| JSON | False | 51.4 ns/op | 0 allocs/op |
 | Standard | True | 35.8 ns/op | 0 allocs/op |
 | Standard | False | 118 ns/op | 0 allocs/op |
 
