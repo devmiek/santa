@@ -124,6 +124,26 @@ type StandardSyncer struct {
 	mutex *SpinLock
 }
 
+// flush writes the data stored in the internal cache to a specific storage
+// device, and then returns the actual number of bytes written and any
+// errors encountered.
+//
+// Please note that this function is not thread-safe.
+func (s *StandardSyncer) flush() (int, error) {
+	size, err := s.writer.Write(s.buffer)
+
+	if err != nil {
+		if size > 0 {
+			s.buffer = append(s.buffer[ : 0], s.buffer[size : ]...)
+		}
+
+		return size, err
+	}
+
+	s.buffer = s.buffer[ : 0]
+	return size, nil
+}
+
 // Write writes the data of a given buffer slice to a specific storage
 // device. If the internal cache is enabled, the internal cache is
 // written first. If the capacity of the internal cache is saturated,
@@ -138,19 +158,15 @@ func (s *StandardSyncer) Write(buffer []byte) (int, error) {
 
 	if s.buffer != nil {
 		if (len(s.buffer) + len(buffer)) >= s.capacity {
-			size, err := s.writer.Write(s.buffer)
+			_, err := s.flush()
 
 			if err != nil {
-				s.buffer = s.buffer[size : ]
-
 				if s.mutex != nil {
 					s.mutex.Unlock()
 				}
 
 				return 0, err
 			}
-
-			s.buffer = s.buffer[ : 0]
 		}
 
 		s.buffer = append(s.buffer, buffer...)
@@ -182,7 +198,7 @@ func (s *StandardSyncer) Sync() error {
 	}
 
 	if len(s.buffer) > 0 {
-		_, err := s.writer.Write(s.buffer)
+		_, err := s.flush()
 
 		if err != nil {
 			if s.mutex != nil {

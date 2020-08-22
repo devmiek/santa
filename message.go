@@ -110,6 +110,11 @@ func (m StructMessage) FormatStandard(buffer []byte) []byte {
 func (m StructMessage) FormatJSON(buffer []byte) []byte {
 	buffer = append(buffer, '"')
 	buffer = append(buffer, m.Text...)
+
+	if len(m.Fields) == 0 {
+		return append(buffer, '"')
+	}
+
 	buffer = append(buffer, "\", \"payload\": "...)
 	return m.Fields.FormatJSON(buffer)
 }

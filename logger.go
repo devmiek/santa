@@ -891,6 +891,7 @@ func (o *StandardOption) Build() (*StandardLogger, error) {
 		Name: o.Name,
 		Level: o.Level,
 		Sampler: sampler,
+		Hooks: o.Hooks,
 		Exporters: []Exporter {
 			exporter,
 			errorExporter,
