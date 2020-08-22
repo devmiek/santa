@@ -88,8 +88,13 @@ func TestStructMessage(t *testing.T) {
 
 	buffer = message.FormatJSON(buffer[ : 0])
 
-	assert.Equal(t, `"Hello Test!", "payload": {"name": "test", "age": 100}`,
-		string(buffer), "Unexpected format result")
+	assert.JSONEq(t, `{
+		"textPayload": "Hello Test!",
+		"jsonPayload": {
+			"name": "test",
+			"age": 100
+		}
+	}`, string(buffer), "Unexpected format result")
 
 	assert.Equal(t, "Hello Test!", message.SampleText(),
 		"Unexpected sample result")

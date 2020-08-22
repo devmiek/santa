@@ -48,10 +48,12 @@ In the above sample code, a structured logger with default options is used to pr
     },
     "logName": null,
     "level": "INFO",
-    "message": "Hello World!",
-    "payload": {
-        "name": "santa",
-        "age": 10
+    "message": {
+        "textPayload": "Hello Santa!",
+        "jsonPayload": {
+            "name": "santa",
+            "age": 100
+        }
     }
 }
 ```
@@ -178,7 +180,14 @@ If only 2 non-complex fields are printed out:
 
 | Encoder | Sampling | Time | Objects Allocated |
 | :------ | :------: | :----------: | :---------------: |
+| JSON | True | 88.8 ns/op | 1 allocs/op |
 | JSON | False | 102 ns/op | 1 allocs/op |
+
+Normally, the production environment uses files on the local hard disk to store log entry data. The following benchmark performance test uses the file synchronizer and only prints 2 non-complex fields (note: the local hard disk uses SSD, the actual performance varies by hard disk performance):
+
+| Encoder | Sampling | Time | Objects Allocated |
+| :------ | :------: | :----------: | :---------------: |
+| JSON | False | 789 ns/op | 3 allocs/op |
 
 ### Template Logger
 For the template logger, the benchmark program uses the `santa.NewTemplateBenchmark` function to build an instance of the template logger for benchmark testing.

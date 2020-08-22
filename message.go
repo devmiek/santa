@@ -108,15 +108,16 @@ func (m StructMessage) FormatStandard(buffer []byte) []byte {
 // FormatJSON formats the log entry message into a JSON string and appends
 // it to the given buffer slice, and then returns the appended buffer slice.
 func (m StructMessage) FormatJSON(buffer []byte) []byte {
-	buffer = append(buffer, '"')
+	buffer = append(buffer, `{"textPayload": "`...)
 	buffer = append(buffer, m.Text...)
-
+	
 	if len(m.Fields) == 0 {
-		return append(buffer, '"')
+		return append(buffer, `"}`...)
 	}
 
-	buffer = append(buffer, "\", \"payload\": "...)
-	return m.Fields.FormatJSON(buffer)
+	buffer = append(buffer, `", "jsonPayload": `...)
+	buffer = m.Fields.FormatJSON(buffer)
+	return append(buffer, '}')
 }
 
 // SampleText returns the text sample string of the log entry message.
