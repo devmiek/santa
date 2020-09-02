@@ -89,8 +89,8 @@ const (
 // It is worth noting that any value that has implemented the relevant
 // formatter interface can use element storage. For example, the
 // ElementInts data type of the actual native data type []int64
-// implements the JSONFormatter interface, so when the FormatJSON
-// function of the element is called, the FormatJSON function of the
+// implements the JSONFormatter interface, so when the SerializeJSON
+// function of the element is called, the SerializeJSON function of the
 // value of the ElementInts data type will be automatically called.
 //
 // This means that applications can easily extend custom element types,
@@ -118,10 +118,10 @@ type Element struct {
 	Interface interface { }
 }
 
-// FormatJSON formats the value of the element as a JSON string, then
-// appends to the given buffer slice, and finally returns the appended
+// SerializeJSON serializes the element into a JSON value string and
+// appends it to the given buffer slice, and then returns the appended
 // buffer slice.
-func (e Element) FormatJSON(buffer []byte) []byte {
+func (e Element) SerializeJSON(buffer []byte) []byte {
 	switch e.Type {
 	case TypeInt:
 		return strconv.AppendInt(buffer, e.Number, 10)
@@ -147,11 +147,11 @@ func (e Element) FormatJSON(buffer []byte) []byte {
 		buffer = append(buffer, e.Interface.([]byte)...)
 		return append(buffer, '"')
 	default:
-		element, ok := e.Interface.(JSONFormatter)
+		element, ok := e.Interface.(JSONSerializer)
 		if !ok {
 			return append(buffer, "???"...)
 		}
-		return element.FormatJSON(buffer)
+		return element.SerializeJSON(buffer)
 	}
 }
 
@@ -348,9 +348,10 @@ func Value(name string, value interface { }) Field {
 // Element structure.
 type ElementObject []Field
 
-// FormatJSON formats the element as a JSON string, then appends to the
-// given buffer slice, and finally returns the appended buffer slice.
-func (e ElementObject) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the element into a JSON string and appends
+// it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (e ElementObject) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '{')
 	last := len(e) - 1
 
@@ -358,7 +359,7 @@ func (e ElementObject) FormatJSON(buffer []byte) []byte {
 		buffer = append(buffer, '"')
 		buffer = append(buffer, e[index].Name...)
 		buffer = append(buffer, "\": "...)
-		buffer = e[index].FormatJSON(buffer)
+		buffer = e[index].SerializeJSON(buffer)
 
 		if index < last {
 			buffer = append(buffer, ", "...)
@@ -386,14 +387,15 @@ func Object(name string, fields ...Field) Field {
 // section of the Element structure.
 type ElementObjects []ElementObject
 
-// FormatJSON formats the element as a JSON string, then appends to the
-// given buffer slice, and finally returns the appended buffer slice.
-func (e ElementObjects) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the element into a JSON string and appends
+// it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (e ElementObjects) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
 	last := len(e) - 1
 
 	for index := 0; index < len(e); index++ {
-		buffer = e[index].FormatJSON(buffer)
+		buffer = e[index].SerializeJSON(buffer)
 
 		if index < last {
 			buffer = append(buffer, ", "...)
@@ -421,9 +423,10 @@ func Objects(name string, values ...ElementObject) Field {
 // Element structure.
 type ElementInts []int64
 
-// FormatJSON formats the element as a JSON string, then appends to the
-// given buffer slice, and finally returns the appended buffer slice.
-func (e ElementInts) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the element into a JSON string and appends
+// it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (e ElementInts) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
 	last := len(e) - 1
 
@@ -456,9 +459,10 @@ func Ints(name string, values []int64) Field {
 // Element structure.
 type ElementUint64s []uint64
 
-// FormatJSON formats the element as a JSON string, then appends to the
-// given buffer slice, and finally returns the appended buffer slice.
-func (e ElementUint64s) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the element into a JSON string and appends
+// it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (e ElementUint64s) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
 	last := len(e) - 1
 
@@ -491,9 +495,10 @@ func Uints(name string, values []uint64) Field {
 // Element structure.
 type ElementFloat32s []float32
 
-// FormatJSON formats the element as a JSON string, then appends to the
-// given buffer slice, and finally returns the appended buffer slice.
-func (e ElementFloat32s) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the element into a JSON string and appends
+// it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (e ElementFloat32s) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
 	last := len(e) - 1
 
@@ -527,9 +532,10 @@ func Float32s(name string, values []float32) Field {
 // Element structure.
 type ElementFloat64s []float64
 
-// FormatJSON formats the element as a JSON string, then appends to the
-// given buffer slice, and finally returns the appended buffer slice.
-func (e ElementFloat64s) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the element into a JSON string and appends
+// it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (e ElementFloat64s) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
 	last := len(e) - 1
 
@@ -563,9 +569,10 @@ func Float64s(name string, values []float64) Field {
 // Element structure.
 type ElementBooleans []bool
 
-// FormatJSON formats the element as a JSON string, then appends to the
-// given buffer slice, and finally returns the appended buffer slice.
-func (e ElementBooleans) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the element into a JSON string and appends
+// it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (e ElementBooleans) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
 	last := len(e) - 1
 
@@ -598,9 +605,10 @@ func Booleans(name string, values []bool) Field {
 // Element structure.
 type ElementStrings []string
 
-// FormatJSON formats the element as a JSON string, then appends to the
-// given buffer slice, and finally returns the appended buffer slice.
-func (e ElementStrings) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the element into a JSON string and appends
+// it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (e ElementStrings) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
 	last := len(e) - 1
 
@@ -635,9 +643,10 @@ func Strings(name string, values []string) Field {
 // the Element structure.
 type ElementTimes []time.Time
 
-// FormatJSON formats the element as a JSON string, then appends to the
-// given buffer slice, and finally returns the appended buffer slice.
-func (e ElementTimes) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the element into a JSON string and appends
+// it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (e ElementTimes) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
 	last := len(e) - 1
 

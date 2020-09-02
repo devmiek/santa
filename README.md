@@ -46,11 +46,12 @@ In the above sample code, a structured logger with default options is used to pr
         "line": 18,
         "function": "main.main"
     },
+    "labels": null,
     "logName": null,
     "level": "INFO",
     "message": {
-        "textPayload": "Hello Santa!",
-        "jsonPayload": {
+        "text": "Hello Santa!",
+        "fields": {
             "name": "santa",
             "age": 100
         }

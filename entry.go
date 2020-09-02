@@ -51,7 +51,7 @@ type EntrySourceLocation struct {
 // AppendString encodes the source of the log entry as a string, then
 // appends it to the end of the given buffer slice, and finally
 // returns the new buffer slice.
-func (s *EntrySourceLocation) AppendString(buffer []byte) []byte {
+func (s EntrySourceLocation) AppendString(buffer []byte) []byte {
 	if buffer == nil {
 		return nil
 	}
@@ -66,10 +66,10 @@ func (s *EntrySourceLocation) AppendString(buffer []byte) []byte {
 	return strconv.AppendInt(buffer, int64(s.Line), 10)
 }
 
-// AppendJSON encodes the source location of the log entry as a JSON
+// SerializeJSON encodes the source location of the log entry as a JSON
 // string and appends it to the given buffer slice, and then returns
 // the appended buffer slice.
-func (s *EntrySourceLocation) AppendJSON(buffer []byte) []byte {
+func (s EntrySourceLocation) SerializeJSON(buffer []byte) []byte {
 	if buffer == nil {
 		return nil
 	}
@@ -122,4 +122,9 @@ type Entry struct {
 
 	// Name represents the name of the log entry.
 	Name string
+
+	// Labels represents a set of labels related to log entries. For
+	// details, please refer to the annotation section of the
+	// SerializedLabels structure.
+	Labels SerializedLabels
 }

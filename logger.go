@@ -58,6 +58,7 @@ type Logger struct {
 	sampler Sampler
 	hooks []Hook
 	exporters []Exporter
+	lables SerializedLabels
 
 	addSource bool
 }
@@ -84,6 +85,7 @@ func (l *Logger) output(level Level, message Message) error {
 	entry.Level = level
 	entry.Time = time.Now()
 	entry.Message = message
+	entry.Labels = l.lables
 
 	if l.sampler != nil && !l.sampler.Sample(entry) {
 		pool.entry.Free(entry)
@@ -183,6 +185,17 @@ type Option struct {
 	// process, and any side effects of external modifications are undefined.
 	Exporters []Exporter
 
+	// Labels represents one or more labels related to the logger. Each label
+	// is a pair of custom string keys, used to identify the attributes
+	// associated with a log entry. These labels will be added to each log
+	// entry to allow one or more labels to be matched when searching for a
+	// set of log entries in the future.
+	//
+	// If not provided, no label will be added to any log entry by default.
+	// For details, please refer to the annotation section of the Label
+	// structure.
+	Labels Labels
+
 	// DisableSourceLocation represents whether it is necessary to obtain
 	// and set the output API call source location for each log entry, so
 	// that the application can track the source of each log entry. It is
@@ -200,6 +213,7 @@ func (o *Option) Build() (*Logger, error) {
 		sampler: o.Sampler,
 		hooks: o.Hooks,
 		exporters: o.Exporters,
+		lables: NewSerializedLabels(o.Labels...),
 		addSource: !o.DisableSourceLocation,
 	}, nil
 }
@@ -748,6 +762,17 @@ type StandardOption struct {
 	// Please note that this option slice will be reused during the build
 	// process, and any side effects of external modifications are undefined.
 	Hooks []Hook
+
+	// Labels represents one or more labels related to the logger. Each label
+	// is a pair of custom string keys, used to identify the attributes
+	// associated with a log entry. These labels will be added to each log
+	// entry to allow one or more labels to be matched when searching for a
+	// set of log entries in the future.
+	//
+	// If not provided, no label will be added to any log entry by default.
+	// For details, please refer to the annotation section of the Label
+	// structure.
+	Labels Labels
 }
 
 // UseName uses the given name as the value of the option Name. For details,
@@ -771,6 +796,14 @@ func (o *StandardOption) UseLevel(level Level) *StandardOption {
 // instance itself.
 func (o *StandardOption) UseHook(hook Hook) *StandardOption {
 	o.Hooks = append(o.Hooks, hook)
+	return o
+}
+
+// UseLabel appends the given Label value to the Labels option slice. For
+// details, see the comment section of the Labels option. Then return to the
+// option instance itself.
+func (o *StandardOption) UseLabel(label Label) *StandardOption {
+	o.Labels = append(o.Labels, label)
 	return o
 }
 
@@ -896,6 +929,7 @@ func (o *StandardOption) Build() (*StandardLogger, error) {
 			exporter,
 			errorExporter,
 		},
+		Labels: o.Labels,
 		DisableSourceLocation: (!encoder.Option().
 			EncodeSourceLocation),
 	}).Build()

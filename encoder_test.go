@@ -40,11 +40,15 @@ var (
 			Parsed: true,
 		},
 		Name: "test",
+		Labels: NewSerializedLabels(
+			NewLabel("instanceId", "d325ef24327c"),
+		),
 	}
 
 	encoderOption = EncoderOption {
 		EncodeTime: true,
 		EncodeSourceLocation: true,
+		EncodeLabels: true,
 		EncodeName: true,
 		EncodeLevel: true,
 	}
@@ -66,10 +70,11 @@ func TestStandardEncoderEncode(t *testing.T) {
 	buffer, err = encoder.Encode(buffer, entry)
 	assert.NoError(t, err, "Unexpected standard encoder error")
 
-	var expected = fmt.Sprintf("%s %s:%d %s [%s] %s\n",
+	var expected = fmt.Sprintf("%s %s:%d %s %s [%s] %s\n",
 		entry.Time.Format(time.RFC3339Nano),
 		entry.SourceLocation.File,
 		entry.SourceLocation.Line,
+		string(entry.Labels.SerializeStandard(nil)),
 		entry.Name,
 		entry.Level.Format(),
 		entry.Message.(StringMessage),
@@ -94,6 +99,9 @@ func TestJSONEncoderEncode(t *testing.T) {
 			"file": "main.go",
 			"line": 100,
 			"function": ""
+		},
+		"labels": {
+			"instanceId": "d325ef24327c"
 		},
 		"logName": "test",
 		"level": "INFO",

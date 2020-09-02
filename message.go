@@ -32,15 +32,16 @@ type Message interface { }
 // StringMessage is the data type of the string log entry message.
 type StringMessage string
 
-// FormatStandard formats the log entry message as a string and appends
-// it to the given buffer slice, and then returns the appended buffer slice.
-func (m StringMessage) FormatStandard(buffer []byte) []byte {
+// SerializeStandard serializes the message into a standard log string and
+// appends it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (m StringMessage) SerializeStandard(buffer []byte) []byte {
 	return append(buffer, m...)
 }
 
-// FormatJSON formats the log entry message into a JSON string and appends
-// it to the given buffer slice, and then returns the appended buffer slice.
-func (m StringMessage) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the message into a JSON string and appends it
+// to the given buffer slice, and then returns the appended buffer slice.
+func (m StringMessage) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '"')
 	buffer = append(buffer, m...)
 	return append(buffer, '"')
@@ -65,15 +66,16 @@ type TemplateMessage struct {
 	Args []interface { }
 }
 
-// FormatStandard formats the log entry message as a string and appends
-// it to the given buffer slice, and then returns the appended buffer slice.
-func (m TemplateMessage) FormatStandard(buffer []byte) []byte {
+// SerializeStandard serializes the message into a standard log string and
+// appends it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (m TemplateMessage) SerializeStandard(buffer []byte) []byte {
 	return append(buffer, fmt.Sprintf(m.Template, m.Args...)...)
 }
 
-// FormatJSON formats the log entry message into a JSON string and appends
-// it to the given buffer slice, and then returns the appended buffer slice.
-func (m TemplateMessage) FormatJSON(buffer []byte) []byte {
+// SerializeJSON serializes the message into a JSON string and appends it
+// to the given buffer slice, and then returns the appended buffer slice.
+func (m TemplateMessage) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '"')
 	buffer = append(buffer, fmt.Sprintf(m.Template, m.Args...)...)
 	return append(buffer, '"')
@@ -97,26 +99,27 @@ type StructMessage struct {
 	Fields ElementObject
 }
 
-// FormatStandard formats the log entry message as a string and appends
-// it to the given buffer slice, and then returns the appended buffer slice.
-func (m StructMessage) FormatStandard(buffer []byte) []byte {
+// SerializeStandard serializes the message into a standard log string and
+// appends it to the given buffer slice, and then returns the appended buffer
+// slice.
+func (m StructMessage) SerializeStandard(buffer []byte) []byte {
 	buffer = append(buffer, m.Text...)
 	buffer = append(buffer, ' ')
-	return m.Fields.FormatJSON(buffer)
+	return m.Fields.SerializeJSON(buffer)
 }
 
-// FormatJSON formats the log entry message into a JSON string and appends
-// it to the given buffer slice, and then returns the appended buffer slice.
-func (m StructMessage) FormatJSON(buffer []byte) []byte {
-	buffer = append(buffer, `{"textPayload": "`...)
+// SerializeJSON serializes the message into a JSON string and appends it
+// to the given buffer slice, and then returns the appended buffer slice.
+func (m StructMessage) SerializeJSON(buffer []byte) []byte {
+	buffer = append(buffer, `{"text": "`...)
 	buffer = append(buffer, m.Text...)
 	
 	if len(m.Fields) == 0 {
 		return append(buffer, `"}`...)
 	}
 
-	buffer = append(buffer, `", "jsonPayload": `...)
-	buffer = m.Fields.FormatJSON(buffer)
+	buffer = append(buffer, `", "fields": `...)
+	buffer = m.Fields.SerializeJSON(buffer)
 	return append(buffer, '}')
 }
 

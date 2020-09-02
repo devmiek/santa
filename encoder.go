@@ -31,7 +31,7 @@ import (
 var (
 	// ErrorUnsupportedMessage represents that the message type of the
 	// given log entry is not supported, usually because the message
-	// does not correctly implement the message formatting interface
+	// does not correctly implement the message serialization interface
 	// of the encoder.
 	ErrorUnsupportedMessage = errors.New("unsupported message type")
 )
@@ -50,6 +50,11 @@ type EncoderOption struct {
 	// source location of the log entry is encoded and appended to the
 	// encoding result. If not provided, the default value is true.
 	EncodeSourceLocation bool
+
+	// EncodeLabels represents whether to encode one or more labels of
+	// the log entry and append them to the encoding result. If not
+	// provided, the default value is true.
+	EncodeLabels bool
 	
 	// EncodeName represents whether to encode the name of the log entry
 	// and append it to the encoding result. If not provided, the default
@@ -68,6 +73,7 @@ func NewEncoderOption() EncoderOption {
 	return EncoderOption {
 		EncodeTime: true,
 		EncodeSourceLocation: true,
+		EncodeLabels: true,
 		EncodeName: true,
 		EncodeLevel: true,
 	}
@@ -81,9 +87,9 @@ func NewEncoderOption() EncoderOption {
 // encodes log entries into JSON strings that can be easily parsed by
 // machines.
 //
-// The encoder needs different log entry message types to implement a
-// specific formatter interface, otherwise the encoder does not know how to
-// encode the message.
+// The message type of any log entry must implement the serializer
+// interface provided by the specific encoder, otherwise the encoder does
+// not know how to encode the message.
 type Encoder interface {
 	// Encode encodes a given log entry into consecutive bytes in a specific
 	// format, then appends to the given buffer slice, and finally returns
@@ -117,6 +123,10 @@ type EncoderKeys struct {
 	// the default value is "sourceLocation".
 	SourceLocationKey string
 
+	// LabelsKey represents the name of the key used when encoding a set of
+	// labels for log entries. If not provided, the default value is "labels".
+	LabelsKey string
+
 	// NameKey represents the name of the key used when encoding the name of
 	// the log entry. If not provided, the default value is "logName".
 	NameKey string
@@ -137,23 +147,23 @@ func NewEncoderKeys() EncoderKeys {
 	return EncoderKeys {
 		TimeKey: "timestamp",
 		SourceLocationKey: "sourceLocation",
+		LabelsKey: "labels",
 		NameKey: "logName",
 		LevelKey: "level",
 		MessageKey: "message",
 	}
 }
 
-// StandardFormatter is the public interface of the standard encoder
-// message formatter.
+// StandardSerializer is the public interface of the standard serializer.
 //
-// Any log entry message encoded by a standard encoder needs to implement
-// this interface, otherwise the encoder does not know how to format the
-// message.
-type StandardFormatter interface {
-	// FormatStandard formats the log entry message as a string and appends
-	// it to the given buffer slice, and then returns the modified buffer
+// Any message type of a log entry encoded by a standard encoder must
+// implement this interface, otherwise the standard encoder does not know
+// how to encode the message part of a log entry.
+type StandardSerializer interface {
+	// SerializeStandard serializes the message or any content and appends
+	// to the given buffer slice, and then returns the appended buffer
 	// slice.
-	FormatStandard(buffer []byte) []byte
+	SerializeStandard(buffer []byte) []byte
 }
 
 // StandardEncoder is the structure of a standard encoder instance.
@@ -163,9 +173,10 @@ type StandardFormatter interface {
 // application does not need to print out structured logs, a standard
 // encoder is a good choice.
 //
-// Please note that the log entry message must implement the standard
-// formatter interface, otherwise the encoder does not know how to encode
-// the message.
+// Please note that the message type of any log entry encoded with a
+// standard encoder must implement the StandardSerializer interface,
+// otherwise the standard encoder does not know how to encode the
+// message part of the log entry.
 type StandardEncoder struct {
 	layout string
 	option EncoderOption
@@ -190,6 +201,15 @@ func (e *StandardEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 		buffer = append(buffer, ' ')
 	}
 
+	if e.option.EncodeLabels {
+		if entry.Labels.Count() == 0 {
+			buffer = append(buffer, "no-labels "...)
+		} else {
+			buffer = entry.Labels.SerializeStandard(buffer)
+			buffer = append(buffer, ' ')
+		}
+	}
+
 	if e.option.EncodeName && len(entry.Name) > 0 {
 		buffer = append(buffer, entry.Name...)
 		buffer = append(buffer, ' ')
@@ -204,8 +224,8 @@ func (e *StandardEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 	switch message := entry.Message.(type) {
 	case nil:
 		buffer = append(buffer, "null"...)
-	case StandardFormatter:
-		buffer = message.FormatStandard(buffer)
+	case StandardSerializer:
+		buffer = message.SerializeStandard(buffer)
 	default:
 		return nil, ErrorUnsupportedMessage
 	}
@@ -273,16 +293,16 @@ func NewStandardEncoder() (*StandardEncoder, error) {
 	return NewStandardEncoderOption().Build()
 }
 
-// JSONFormatter is the public interface of the JSON encoder message
-// formatter.
+// JSONSerializer is the public interface of JSON serializer.
 //
-// Any log entry message encoded by a JSON encoder needs to implement
-// this interface, otherwise the encoder does not know how to format the
-// message.
-type JSONFormatter interface {
-	// FormatJSON formats the log entry message into a JSON string and appends
-	// it to the given buffer slice, and then returns the appended buffer slice.
-	FormatJSON(buffer []byte) []byte
+// Any message type of a log entry encoded with a JSON encoder must
+// implement this interface, otherwise the JSON encoder does not know
+// how to encode the message part of a log entry.
+type JSONSerializer interface {
+	// SerializeJSON serializes the message or any content and appends
+	// to the given buffer slice, and then returns the appended buffer
+	// slice.
+	SerializeJSON(buffer []byte) []byte
 }
 
 // JSONEncoder is the structure of the JSON encoder instance.
@@ -292,6 +312,11 @@ type JSONFormatter interface {
 // It is usually used in a production environment. For the log output
 // to the console, it is recommended to choose a standard encoder that
 // is easier for humans to read.
+//
+// Please note that the message type of any log entry encoded with the
+// JSON encoder must implement the JSONSerializer interface, otherwise
+// the JSON encoder does not know how to encode the message part of the
+// log entry.
 type JSONEncoder struct {
 	layout string
 	keys EncoderKeys
@@ -302,7 +327,7 @@ type JSONEncoder struct {
 // format, then appends to the given buffer slice, and finally returns
 // the appended buffer slice.
 func (e *JSONEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
-	message, ok := entry.Message.(JSONFormatter)
+	message, ok := entry.Message.(JSONSerializer)
 
 	if !ok {
 		return nil, ErrorUnsupportedMessage
@@ -329,7 +354,21 @@ func (e *JSONEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 		buffer = append(buffer, '"')
 		buffer = append(buffer, e.keys.SourceLocationKey...)
 		buffer = append(buffer, "\": "...)
-		buffer = entry.SourceLocation.AppendJSON(buffer)
+		buffer = entry.SourceLocation.SerializeJSON(buffer)
+		buffer = append(buffer, ", "...)
+	}
+
+	if e.option.EncodeLabels {
+		buffer = append(buffer, '"')
+		buffer = append(buffer, e.keys.LabelsKey...)
+		buffer = append(buffer, `": `...)
+
+		if entry.Labels.Count() == 0 {
+			buffer = append(buffer, "null"...)
+		} else {
+			buffer = entry.Labels.SerializeJSON(buffer)
+		}
+
 		buffer = append(buffer, ", "...)
 	}
 
@@ -359,7 +398,7 @@ func (e *JSONEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 	buffer = append(buffer, '"')
 	buffer = append(buffer, e.keys.MessageKey...)
 	buffer = append(buffer, "\": "...)
-	buffer = message.FormatJSON(buffer)
+	buffer = message.SerializeJSON(buffer)
 
 	return append(buffer, "}\n"...), nil
 }

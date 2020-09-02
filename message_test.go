@@ -32,12 +32,12 @@ func TestStringMessage(t *testing.T) {
 	buffer := make([]byte, 0, 256)
 
 	message := StringMessage("Hello Test!")
-	buffer = message.FormatStandard(buffer)
+	buffer = message.SerializeStandard(buffer)
 	
 	assert.Equal(t, "Hello Test!", string(buffer),
 		"Unexpected format result")
 
-	buffer = message.FormatJSON(buffer[ : 0])
+	buffer = message.SerializeJSON(buffer[ : 0])
 
 	assert.Equal(t, `"Hello Test!"`, string(buffer),
 		"Unexpected format result")
@@ -56,12 +56,12 @@ func TestTemplateMessage(t *testing.T) {
 		},
 	}
 
-	buffer = message.FormatStandard(buffer)
+	buffer = message.SerializeStandard(buffer)
 
 	assert.Equal(t, "Hello Test!", string(buffer),
 		"Unexpected format result")
 
-	buffer = message.FormatJSON(buffer[ : 0])
+	buffer = message.SerializeJSON(buffer[ : 0])
 
 	assert.Equal(t, `"Hello Test!"`, string(buffer),
 		"Unexpected format result")
@@ -81,16 +81,16 @@ func TestStructMessage(t *testing.T) {
 		},
 	}
 
-	buffer = message.FormatStandard(buffer)
+	buffer = message.SerializeStandard(buffer)
 
 	assert.Equal(t, `Hello Test! {"name": "test", "age": 100}`,
 		string(buffer), "Unexpected format result")
 
-	buffer = message.FormatJSON(buffer[ : 0])
+	buffer = message.SerializeJSON(buffer[ : 0])
 
 	assert.JSONEq(t, `{
-		"textPayload": "Hello Test!",
-		"jsonPayload": {
+		"text": "Hello Test!",
+		"fields": {
 			"name": "test",
 			"age": 100
 		}

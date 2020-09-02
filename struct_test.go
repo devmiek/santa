@@ -58,9 +58,11 @@ func TestStructLoggerOption(t *testing.T) {
 		return nil
 	}))
 
+	option.UseLabel(NewLabel("instanceId", "d325ef24327c"))
 	option.UseLevel(LevelInfo)
 	option.UseName("test")
 	
+	assert.Equal(t, "d325ef24327c", option.Labels[0].Value)
 	assert.Equal(t, LevelInfo, option.Level, "Unexpected option value")
 	assert.Equal(t, "test", option.Name, "Unexpected option value")
 

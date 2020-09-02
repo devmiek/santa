@@ -28,28 +28,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEntrySourceLocation(t *testing.T) {
-	buffer := make([]byte, 0, 256)
-
-	sourceLocation := EntrySourceLocation {
-		File: "main.go",
-		Line: 100,
-		Parsed: true,
+func TestLabelSerialize(t *testing.T) {
+	labels := Labels {
+		NewLabel("projectId", "santa-project"),
+		NewLabel("zoneId", "ap-shanghai-1"),
+		NewLabel("instanceId", "d325ef24327c"),
 	}
 
-	buffer = sourceLocation.AppendString(buffer)
+	buffer := make([]byte, 0, 1024)
+	buffer = labels.SerializeStandard(buffer)
 
-	assert.Equal(t, "main.go:100", string(buffer),
-		"Unexpected append result")
-	
-	buffer = sourceLocation.SerializeJSON(buffer[ : 0])
+	assert.JSONEq(t, `{
+		"projectId": "santa-project",
+		"zoneId": "ap-shanghai-1",
+		"instanceId": "d325ef24327c"
+	}`, string(buffer), "Unexpected JSON serialization result")
+}
 
-	const expected = `{
-        "file": "main.go",
-        "line": 100,
-        "function": ""
-	}`
+func TestSerializedLabels(t *testing.T) {
+	labels := NewSerializedLabels(
+		NewLabel("projectId", "santa-project"),
+		NewLabel("zoneId", "ap-shanghai-1"),
+		NewLabel("instanceId", "d325ef24327c"),
+	)
 
-	assert.JSONEq(t, expected, string(buffer),
-		"Unexpected append result")
+	buffer := make([]byte, 0, 1024)
+	buffer = labels.SerializeStandard(buffer)
+
+	assert.JSONEq(t, `{
+		"projectId": "santa-project",
+		"zoneId": "ap-shanghai-1",
+		"instanceId": "d325ef24327c"
+	}`, string(buffer), "Unexpected JSON serialization result")
 }

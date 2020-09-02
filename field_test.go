@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestElementFormatJSON(t *testing.T) {
+func TestElementSerializeJSON(t *testing.T) {
 	timestamp, _ := time.Parse(time.RFC3339Nano,
 		"2020-08-13T21:56:30.0719939+08:00")
 
@@ -96,7 +96,7 @@ func TestElementFormatJSON(t *testing.T) {
 			"Unexpected field name")
 
 		assert.Equal(t, sample.expected, string(
-			sample.field.FormatJSON(buffer[ : 0])),
+			sample.field.SerializeJSON(buffer[ : 0])),
 			"Unexpected JSON formatted append result",
 		)
 	}
@@ -178,7 +178,7 @@ func TestElementFormatJSON(t *testing.T) {
 			"Unexpected field name")
 
 		assert.JSONEq(t, sample.expected,
-			string(sample.field.FormatJSON(buffer[ : 0])),
+			string(sample.field.SerializeJSON(buffer[ : 0])),
 			"Unexpected JSON formatted append result",
 		)
 	}
