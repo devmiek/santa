@@ -117,6 +117,17 @@ func (l *TemplateLogger) Fatalf(template string, args ...interface { }) error {
 	return err
 }
 
+// Decorator creates and returns a decorator instance that wraps a copy
+// of the current logger instance. For details, please refer to the
+// comment section of the Decorator structure.
+//
+// Please note that if the returned decorator instance is no longer
+// used, the Free function must be called for it, otherwise the object
+// may be leaked.
+func (l *TemplateLogger) Decorator() *TemplateDecorator {
+	return pool.decorator.template.New(l)
+}
+
 // TemplateOption is a structure that contains options for the template
 // logger.
 type TemplateOption struct {

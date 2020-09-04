@@ -125,6 +125,17 @@ func (l *Logger) Print(level Level, message Message) error {
 	return l.output(level, message)
 }
 
+// Decorator creates and returns a decorator instance that wraps a copy
+// of the current logger instance. For details, please refer to the
+// comment section of the Decorator structure.
+//
+// Please note that if the returned decorator instance is no longer
+// used, the Free function must be called for it, otherwise the object
+// may be leaked.
+func (l *Logger) Decorator() *Decorator {
+	return pool.decorator.base.New(l)
+}
+
 // Option is a structure that contains options for the logger.
 //
 // Normally, all the logger option types of all logger types rely on the
@@ -296,6 +307,17 @@ func (l *StandardLogger) Error(message Message) error {
 // returns any errors encountered.
 func (l *StandardLogger) Fatal(message Message) error {
 	return l.output(LevelFatal, message)
+}
+
+// Decorator creates and returns a decorator instance that wraps a copy
+// of the current logger instance. For details, please refer to the
+// comment section of the Decorator structure.
+//
+// Please note that if the returned decorator instance is no longer
+// used, the Free function must be called for it, otherwise the object
+// may be leaked.
+func (l *StandardLogger) Decorator() *StandardDecorator {
+	return pool.decorator.standard.New(l)
 }
 
 // Sync writes the internal cache data of a specific synchronizer to a
