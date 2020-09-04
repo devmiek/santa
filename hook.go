@@ -33,26 +33,15 @@ package santa
 // Using the Hook mechanism, developers can intercept and process interesting
 // events and log entries.
 type Hook interface {
-	// Close handles the closing of the logger. This function will
-	// be called before the bound logger instance is closed.
-	//
-	// If the function returns an error, the shutdown operation of the
-	// associated logger instance will be cancelled and the same error
-	// will be returned.
-	//
-	// Hook instance can also use this process to clean up maintained
-	// state and open resources.
-	Close() error
-
 	// Print handles the printed log entries. This function will
 	// print the log entry in the bound logger instance currently
 	// being called.
-	// 
+	//
 	// If the function returns an error, the printing operation for
 	// the given log entry will be cancelled.
 	//
 	// Hook instances can modify log entries during this process.
-	Print(entry *Entry) error	
+	Print(entry *Entry) error
 }
 
 // SimpleHookHandler is the type of handler function of simple Hook.
@@ -76,12 +65,6 @@ func NewSimpleHook(handler SimpleHookHandler) *SimpleHook {
 	return &SimpleHook {
 		handler: handler,
 	}
-}
-
-// Close handles the closing of the logger instance, and simple Hook
-// does not perform any processing on it.
-func (h *SimpleHook) Close() error {
-	return nil
 }
 
 // Print handles the printing of log entries on the logger instance,

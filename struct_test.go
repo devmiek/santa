@@ -54,11 +54,11 @@ func TestStructLoggerOption(t *testing.T) {
 	assert.Equal(t, *flushingOption, option.Flushing,
 		"Unexpected option value")
 
-	option.UseHook(NewSimpleHook(func(entry *Entry) error {
+	option.UseHooks(NewSimpleHook(func(entry *Entry) error {
 		return nil
 	}))
 
-	option.UseLabel(NewLabel("instanceId", "d325ef24327c"))
+	option.UseLabels(NewLabel("instanceId", "d325ef24327c"))
 	option.UseLevel(LevelInfo)
 	option.UseName("test")
 	

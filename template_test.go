@@ -58,7 +58,7 @@ func TestTemplateLoggerOption(t *testing.T) {
 		return nil
 	}))
 
-	option.UseLabel(NewLabel("instanceId", "d325ef24327c"))
+	option.UseLabels(NewLabel("instanceId", "d325ef24327c"))
 	option.UseLevel(LevelInfo)
 	option.UseName("test")
 	

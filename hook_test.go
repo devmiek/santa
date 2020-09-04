@@ -38,9 +38,7 @@ func TestSimpleHook(t *testing.T) {
 	}
 
 	hook := NewSimpleHook(handler)
-
 	err := hook.Print(nil)
-	_ = hook.Close()
 
 	assert.Equal(t, "Error", err.Error(), "Unexpected return value")
 	assert.Equal(t, true, succeed, "Hook handler is not called")

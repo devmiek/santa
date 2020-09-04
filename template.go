@@ -147,19 +147,19 @@ func (o *TemplateOption) UseHook(hook Hook) *TemplateOption {
 	return o
 }
 
-// UseLabel appends the given Label value to the Labels option slice. For
-// details, see the comment section of the Labels option. Then return to the
-// option instance itself.
-func (o *TemplateOption) UseLabel(label Label) *TemplateOption {
-	o.Labels = append(o.Labels, label)
+// UseHooks appends the given one or more hooks to the o.Hooks option slice,
+// and then returns the option instance itself. For details, please refer to
+// the comment section of the o.Hooks option.
+func (o *TemplateOption) UseHooks(hooks ...Hook) *TemplateOption {
+	o.Hooks = append(o.Hooks, hooks...)
 	return o
 }
 
-// UseSampling uses the given sampling option as the value of option Sampling.
-// For details, please refer to the comment section of the Sampling option.
-// Then return to the option instance itself.
-func (o *TemplateOption) UseSampling(option *SamplingOption) *TemplateOption {
-	o.Sampling = *option
+// UseLabels appends the given one or more labels to the o.Labels option
+// slice, and then returns the option instance itself. For details, please
+// refer to the comment section of the o.Labels option.
+func (o *TemplateOption) UseLabels(labels ...Label) *TemplateOption {
+	o.Labels = append(o.Labels, labels...)
 	return o
 }
 

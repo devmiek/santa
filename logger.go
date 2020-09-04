@@ -63,7 +63,7 @@ type Logger struct {
 	addSource bool
 }
 
-// output Checks whether the log level is lower than the minimum log
+// output checks whether the log level is lower than the minimum log
 // level of the logger. If it is higher than or equal to, a log entry
 // of the given log level and message is generated. The generated log
 // entries are then passed to the log entry sampler and one or more log
@@ -791,19 +791,19 @@ func (o *StandardOption) UseLevel(level Level) *StandardOption {
 	return o
 }
 
-// UseHook appends the given Hook value to the Hook option slice. For details,
-// see the comment section of the Hook option. Then return to the option
-// instance itself.
-func (o *StandardOption) UseHook(hook Hook) *StandardOption {
-	o.Hooks = append(o.Hooks, hook)
+// UseHooks appends the given one or more hooks to the o.Hooks option slice,
+// and then returns the option instance itself. For details, please refer to
+// the comment section of the o.Hooks option.
+func (o *StandardOption) UseHooks(hooks ...Hook) *StandardOption {
+	o.Hooks = append(o.Hooks, hooks...)
 	return o
 }
 
-// UseLabel appends the given Label value to the Labels option slice. For
-// details, see the comment section of the Labels option. Then return to the
-// option instance itself.
-func (o *StandardOption) UseLabel(label Label) *StandardOption {
-	o.Labels = append(o.Labels, label)
+// UseLabels appends the given one or more labels to the o.Labels option
+// slice, and then returns the option instance itself. For details, please
+// refer to the comment section of the o.Labels option.
+func (o *StandardOption) UseLabels(labels ...Label) *StandardOption {
+	o.Labels = append(o.Labels, labels...)
 	return o
 }
 

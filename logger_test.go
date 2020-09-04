@@ -245,7 +245,7 @@ func TestStandardLoggerOption(t *testing.T) {
 	assert.Equal(t, *flushingOption, option.Flushing,
 		"Unexpected option value")
 
-	option.UseHook(NewSimpleHook(func(entry *Entry) error {
+	option.UseHooks(NewSimpleHook(func(entry *Entry) error {
 		return nil
 	}))
 	
