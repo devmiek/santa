@@ -46,7 +46,7 @@ func TestLoggerOption(t *testing.T) {
 	logger, err := option.Build()
 	assert.NoError(t, err, "Unexpected build error")
 
-	assert.Equal(t, 1, logger.lables.Count(), "Unexpected instance error")
+	assert.Equal(t, 1, logger.labels.Count(), "Unexpected instance error")
 	assert.Len(t, logger.exporters, 1, "Unexpected instance error")
 	assert.Equal(t, exporter, logger.exporters[0], "Unexpected instance error")
 	assert.Equal(t, option.Sampler, logger.sampler, "Unexpected instance error")

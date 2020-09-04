@@ -58,7 +58,7 @@ type Logger struct {
 	sampler Sampler
 	hooks []Hook
 	exporters []Exporter
-	lables SerializedLabels
+	labels SerializedLabels
 
 	addSource bool
 }
@@ -85,7 +85,7 @@ func (l *Logger) output(level Level, message Message) error {
 	entry.Level = level
 	entry.Time = time.Now()
 	entry.Message = message
-	entry.Labels = l.lables
+	entry.Labels = l.labels
 
 	if l.sampler != nil && !l.sampler.Sample(entry) {
 		pool.entry.Free(entry)
@@ -213,7 +213,7 @@ func (o *Option) Build() (*Logger, error) {
 		sampler: o.Sampler,
 		hooks: o.Hooks,
 		exporters: o.Exporters,
-		lables: NewSerializedLabels(o.Labels...),
+		labels: NewSerializedLabels(o.Labels...),
 		addSource: !o.DisableSourceLocation,
 	}, nil
 }
