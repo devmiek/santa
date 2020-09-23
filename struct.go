@@ -119,17 +119,6 @@ func (l *StructLogger) Fatals(text string, fields ...Field) error {
 	return err
 }
 
-// Decorator creates and returns a decorator instance that wraps a copy
-// of the current logger instance. For details, please refer to the
-// comment section of the Decorator structure.
-//
-// Please note that if the returned decorator instance is no longer
-// used, the Free function must be called for it, otherwise the object
-// may be leaked.
-func (l *StructLogger) Decorator() *StructDecorator {
-	return pool.decorator.structure.New(l)
-}
-
 // StructOption is a structure that contains options for structured
 // loggers.
 type StructOption struct {

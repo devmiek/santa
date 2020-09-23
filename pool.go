@@ -186,161 +186,6 @@ func NewExporterBufferPool() *ExporterBufferPool {
 	}
 }
 
-// DecoratorPool is a structure that contains instances of cached
-// decorators.
-//
-// The decorator pool allows the allocated and used decorator instances
-// to be cached in the pool for reuse by other hyper-threading contexts,
-// which will significantly reduce the number of heap memory allocations.
-type DecoratorPool struct {
-	pool *sync.Pool
-}
-
-// New gets, initializes and returns a usable decorator instance from the
-// buffer pool. If no decorator instance is available, a new one is
-// created.
-func (p *DecoratorPool) New(logger *Logger) *Decorator {
-	decorator := p.pool.Get().(*Decorator)
-	decorator.Logger = *logger
-	decorator.brush.logger = &decorator.Logger
-	return decorator
-}
-
-// Free returns the instance of the given decorator to the buffer pool.
-// Note that the behavior of using instances of returned decorators is
-// undefined.
-func (p *DecoratorPool) Free(decorator *Decorator) {
-	p.pool.Put(decorator)
-}
-
-// NewDecoratorPool creates and returns a decorator pool instance.
-func NewDecoratorPool() *DecoratorPool {
-	return &DecoratorPool {
-		pool: &sync.Pool {
-			New: func() interface { } {
-				return &Decorator { }
-			},
-		},
-	}
-}
-
-// StandardDecoratorPool is a structure that contains instances of
-// cached decorators.
-//
-// The decorator pool allows the allocated and used decorator instances
-// to be cached in the pool for reuse by other hyper-threading contexts,
-// which will significantly reduce the number of heap memory allocations.
-type StandardDecoratorPool struct {
-	pool *sync.Pool
-}
-
-// New gets, initializes and returns a usable decorator instance from the
-// buffer pool. If no decorator instance is available, a new one is
-// created.
-func (p *StandardDecoratorPool) New(logger *StandardLogger) *StandardDecorator {
-	decorator := p.pool.Get().(*StandardDecorator)
-	decorator.StandardLogger = *logger
-	decorator.brush.logger = &decorator.Logger
-	return decorator
-}
-
-// Free returns the instance of the given decorator to the buffer pool.
-// Note that the behavior of using instances of returned decorators is
-// undefined.
-func (p *StandardDecoratorPool) Free(decorator *StandardDecorator) {
-	p.pool.Put(decorator)
-}
-
-// NewStandardDecoratorPool creates and returns a standard decorator
-// pool instance.
-func NewStandardDecoratorPool() *StandardDecoratorPool {
-	return &StandardDecoratorPool {
-		pool: &sync.Pool {
-			New: func() interface { } {
-				return &StandardDecorator { }
-			},
-		},
-	}
-}
-
-// TemplateDecoratorPool is a structure that contains instances of
-// cached decorators.
-//
-// The decorator pool allows the allocated and used decorator instances
-// to be cached in the pool for reuse by other hyper-threading contexts,
-// which will significantly reduce the number of heap memory allocations.
-type TemplateDecoratorPool struct {
-	pool *sync.Pool
-}
-
-// New gets, initializes and returns a usable decorator instance from the
-// buffer pool. If no decorator instance is available, a new one is
-// created.
-func (p *TemplateDecoratorPool) New(logger *TemplateLogger) *TemplateDecorator {
-	decorator := p.pool.Get().(*TemplateDecorator)
-	decorator.TemplateLogger = *logger
-	decorator.brush.logger = &decorator.Logger
-	return decorator
-}
-
-// Free returns the instance of the given decorator to the buffer pool.
-// Note that the behavior of using instances of returned decorators is
-// undefined.
-func (p *TemplateDecoratorPool) Free(decorator *TemplateDecorator) {
-	p.pool.Put(decorator)
-}
-
-// NewTemplateDecoratorPool creates and returns a template decorator
-// pool instance.
-func NewTemplateDecoratorPool() *TemplateDecoratorPool {
-	return &TemplateDecoratorPool {
-		pool: &sync.Pool {
-			New: func() interface { } {
-				return &TemplateDecorator { }
-			},
-		},
-	}
-}
-
-// StructDecoratorPool is a structure that contains instances of
-// cached decorators.
-//
-// The decorator pool allows the allocated and used decorator instances
-// to be cached in the pool for reuse by other hyper-threading contexts,
-// which will significantly reduce the number of heap memory allocations.
-type StructDecoratorPool struct {
-	pool *sync.Pool
-}
-
-// New gets, initializes and returns a usable decorator instance from the
-// buffer pool. If no decorator instance is available, a new one is
-// created.
-func (p *StructDecoratorPool) New(logger *StructLogger) *StructDecorator {
-	decorator := p.pool.Get().(*StructDecorator)
-	decorator.StructLogger = *logger
-	decorator.brush.logger = &decorator.Logger
-	return decorator
-}
-
-// Free returns the instance of the given decorator to the buffer pool.
-// Note that the behavior of using instances of returned decorators is
-// undefined.
-func (p *StructDecoratorPool) Free(decorator *StructDecorator) {
-	p.pool.Put(decorator)
-}
-
-// NewStructDecoratorPool creates and returns a struct decorator
-// pool instance.
-func NewStructDecoratorPool() *StructDecoratorPool {
-	return &StructDecoratorPool {
-		pool: &sync.Pool {
-			New: func() interface { } {
-				return &StructDecorator { }
-			},
-		},
-	}
-}
-
 // pool is a structural variable that contains default instances of
 // various pools. These pool instances are automatically created when
 // the application is initialized and shared globally.
@@ -353,12 +198,6 @@ var pool struct {
 	buffer struct {
 		exporter *ExporterBufferPool
 	}
-	decorator struct {
-		base *DecoratorPool
-		standard *StandardDecoratorPool
-		template *TemplateDecoratorPool
-		structure *StructDecoratorPool
-	}
 }
 
 // init is used to initialize the variable pool.
@@ -367,8 +206,4 @@ func init() {
 	pool.message.template = NewTemplateMessagePool()
 	pool.message.structure = NewStructMessagePool()
 	pool.buffer.exporter = NewExporterBufferPool()
-	pool.decorator.base = NewDecoratorPool()
-	pool.decorator.standard = NewStandardDecoratorPool()
-	pool.decorator.template = NewTemplateDecoratorPool()
-	pool.decorator.structure = NewStructDecoratorPool()
 }
