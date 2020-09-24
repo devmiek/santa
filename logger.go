@@ -29,15 +29,18 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 var (
-	// ErrorKindInvalid represents that the value of kind is invalid.
-	// This is usually because a data type corresponding to a given
-	// kind does not exist, or the given kind of the current operation
-	// is not supported.
-	ErrorKindInvalid = errors.New("invalid kind value")
+	// ErrInvalidType represents the type is invalid. This is usually
+	// because the given type is invalid or unsupported.
+	ErrInvalidType = errors.New("invalid type")
+
+	// ErrClosed represents the instance has been closed. This is usually
+	// because the application attempts to close an instance multiple times.
+	ErrClosed = errors.New("instance has been closed")
 )
 
 // Logger is the structure of the logger instance.
@@ -259,13 +262,20 @@ func New() (*Logger, error) {
 // data. For details, please refer to the comment section of the Syncer
 // interface.
 //
-// The API provided by the standard logger is thread-safe.
+// Unless explicitly stated, the API provided by the logger is
+// thread-safe. It’s worth noting that APIs that allow post-build
+// changes to logger instances are generally not thread-safe. If you
+// need to change the logger instance (including but not limited to:
+// minimum log entry level, etc.), use the Duplicate function to create
+// a copy of the logger instance, and then make changes to the copy of
+// the logger instance.
 type StandardLogger struct {
 	Logger
 
 	context context.Context
 	contextCancel context.CancelFunc
 	contextWaitGroup *sync.WaitGroup
+	contextReferences *int32
 }
 
 // Debug outputs a given log message with a log level of DEBUG, and then
@@ -298,6 +308,79 @@ func (l *StandardLogger) Fatal(message Message) error {
 	return l.output(LevelFatal, message)
 }
 
+// Duplicate creates and returns a copy of the logger. If the logger is
+// closed, it returns nil.
+//
+// Please note that the application must explicitly close each copy of
+// the logger, otherwise the logger may be leaked.
+func (l *StandardLogger) Duplicate() *StandardLogger {
+	if atomic.AddInt32(l.contextReferences, 1) == 1 {
+		// The logger has been shut down, and using the created copy
+		// may cause panic.
+		return nil
+	}
+
+	instance := *l
+	return &instance
+}
+
+// SetName sets the log entry name to the given name. For details, please
+// refer to the comment section of the Name field of the StandardOption
+// structure.
+//
+// Please note that this API is not thread-safe.
+func (l *StandardLogger) SetName(name string) {
+	l.name = name
+}
+
+// SetLevel sets the lowest level of the log entry to the given level.
+// For details, please refer to the comment section of the Level field of
+// the StandardOption structure.
+//
+// Please note that this API is not thread-safe.
+func (l *StandardLogger) SetLevel(level Level) {
+	l.level = level
+}
+
+// SetSampler sets the sampler to the given sampler. For details, please
+// refer to the comment section of the Sampler field of the Option
+// structure.
+//
+// Please note that this API is not thread-safe.
+func (l *StandardLogger) SetSampler(sampler Sampler) {
+	l.sampler = sampler
+}
+
+// SetLabels sets the label to one or more given labels. For details,
+// please refer to the comment section of the Labels field of the Option
+// structure.
+//
+// It is worth noting that one or more labels previously set by the
+// logger will be discarded because labels need to be pre-serialized.
+//
+// Please note that this API is not thread-safe.
+func (l *StandardLogger) SetLabels(labels ...Label) {
+	l.labels = NewSerializedLabels(labels...)
+}
+
+// AddHooks adds one or more hooks to the hook chain. For details,
+// please refer to the comment section of the Hooks field of the Option
+// option.
+//
+// Please note that this API is not thread-safe.
+func (l *StandardLogger) AddHooks(hooks ...Hook) {
+	l.hooks = append(l.hooks, hooks...)
+}
+
+// ResetHooks resets the hook chain, and the hooks that have been added
+// will be removed. For details, please refer to the comment section of
+// the Hooks field of the Option option.
+//
+// Please note that this API is not thread-safe.
+func (l *StandardLogger) ResetHooks() {
+	l.hooks = []Hook { }
+}
+
 // Sync writes the internal cache data of a specific synchronizer to a
 // specific storage device. If the specific storage device is based on
 // the file system, write the data cached by the file system to the
@@ -321,10 +404,27 @@ func (l *StandardLogger) Sync() error {
 // encountered. For details, please refer to the comment section of the
 // Close function of the Exporter interface.
 //
+// If there are multiple copies of the logger, this function only reduces
+// the reference count of the logger. If the logger's reference count is 0,
+// it will actually be closed.
+//
 // Please note that this function is not guaranteed to succeed. If any
 // errors are encountered, the state of the application may change. The
 // best practice is to exit the application.
 func (l *StandardLogger) Close() error {
+	references := atomic.AddInt32(l.contextReferences, -1)
+
+	switch {
+	case references > 0:
+		// The other logger copy is using the logger and cannot be closed
+		// now, otherwise it may cause panic.
+		return nil
+	case references < 0:
+		// This is usually because the application tries to close the
+		// logger repeatedly.
+		return ErrClosed
+	}
+
 	l.contextCancel()
 	l.contextWaitGroup.Wait()
 
@@ -373,7 +473,7 @@ const (
 // SamplingOption is a structure that contains options for sampling log
 // entries.
 type SamplingOption struct {
-	// Kind represents the type of sampler, and its options are defined
+	// Type represents the type of sampler, and its options are defined
 	// by the constants beginning with Sampler... If the log entry message
 	// does not implement the parsing interface of a specific sampler type,
 	// the sampler may not work. If not provided, the default value is
@@ -381,32 +481,32 @@ type SamplingOption struct {
 	//
 	// If the value of this option is empty, no valid log entry sampler
 	// instance will be built.
-	Kind string
+	Type string
 
 	// Option represents the value of the optional items of the sampler.
 	// The actual data type of the value is determined by the value of the
-	// option Kind. The optional types of different sampler types are
+	// option Type. The optional types of different sampler types are
 	// different. If not provided, the default value is the default optional
 	// value for the specific sampler type.
 	Option interface { }
 }
 
 // UseText uses the text sampler (SamplerText constant) as the value of the
-// option Kind. For details, please refer to the comment section of the
+// option Type. For details, please refer to the comment section of the
 // SamplerText constant. Then return to the option instance itself.
 func (o *SamplingOption) UseText() *SamplingOption {
-	o.Kind = SamplerText
+	o.Type = SamplerText
 	o.Option = NewTextSamplerOption()
 	return o
 }
 
 // UseTextOption uses the text sampler (SamplerText constant) as the value
-// of the option Kind, and then uses the value of the given option as the
+// of the option Type, and then uses the value of the given option as the
 // value of the option. If the value of the given option is nil, the default
 // option is used. For details, please refer to the comment section of the
 // SamplerText constant. Then return to the option instance itself.
 func (o *SamplingOption) UseTextOption(option *TextSamplerOption) *SamplingOption {
-	o.Kind = SamplerText
+	o.Type = SamplerText
 
 	if option == nil {
 		option = NewTextSamplerOption()
@@ -418,15 +518,15 @@ func (o *SamplingOption) UseTextOption(option *TextSamplerOption) *SamplingOptio
 
 // Build builds and returns a sampler instance.
 func (o *SamplingOption) Build() (Sampler, error) {
-	if len(o.Kind) == 0 {
+	if len(o.Type) == 0 {
 		return nil, nil
 	}
 
-	switch o.Kind {
+	switch o.Type {
 	case SamplerText:
 		return o.Option.(*TextSamplerOption).Build()
 	default:
-		return nil, ErrorKindInvalid
+		return nil, ErrInvalidType
 	}
 }
 
@@ -434,7 +534,7 @@ func (o *SamplingOption) Build() (Sampler, error) {
 // default optional values.
 func NewSamplingOption() *SamplingOption {
 	return &SamplingOption {
-		Kind: SamplerText,
+		Type: SamplerText,
 		Option: NewTextSamplerOption(),
 	}
 }
@@ -454,16 +554,16 @@ const (
 // EncodingOption is a structure that contains options for encoding log
 // entries.
 type EncodingOption struct {
-	// Kind represents the type of encoder, and its options are defined
+	// Type represents the type of encoder, and its options are defined
 	// by the constants beginning with Encoder... If the log entry message
 	// does not implement the formatter interface of a specific encoder
 	// type, the encoder may not work. If not provided, the default value
 	// depends on the logger type.
-	Kind string
+	Type string
 
 	// Option represents the value of the optional option of the encoder.
 	// The actual data type of the value depends on the value of the option
-	// Kind. The optional types of different encoder types are different.
+	// Type. The optional types of different encoder types are different.
 	// If not provided, the default value is the default optional value for
 	// the specific encoder type.
 	Option interface { }
@@ -478,23 +578,23 @@ type EncodingOption struct {
 }
 
 // UseStandard uses the standard encoder (EncoderStandard constant) as the
-// value of option Kind. For details, please refer to the comment section
+// value of option Type. For details, please refer to the comment section
 // of the EncoderStandard constant. Then return to the option instance
 // itself.
 func (o *EncodingOption) UseStandard() *EncodingOption {
-	o.Kind = EncoderStandard
+	o.Type = EncoderStandard
 	o.Option = NewStandardEncoderOption()
 	return o
 }
 
 // UseStandardOption uses the standard encoder (EncoderStandard constant)
-// as the value of the option Kind, and then uses the value of the given
+// as the value of the option Type, and then uses the value of the given
 // option as the value of the option. If the value of the given option is
 // nil, the default option is used. For details, please refer to the
 // comment section of the EncoderStandard constant. Then return to the
 // option instance
 func (o *EncodingOption) UseStandardOption(option *StandardEncoderOption) *EncodingOption {
-	o.Kind = EncoderStandard
+	o.Type = EncoderStandard
 
 	if option == nil {
 		option = NewStandardEncoderOption()
@@ -505,23 +605,23 @@ func (o *EncodingOption) UseStandardOption(option *StandardEncoderOption) *Encod
 }
 
 // UseJSON uses the standard encoder (EncoderJSON constant) as the
-// value of option Kind. For details, please refer to the comment section
+// value of option Type. For details, please refer to the comment section
 // of the EncoderJSON constant. Then return to the option instance
 // itself.
 func (o *EncodingOption) UseJSON() *EncodingOption {
-	o.Kind = EncoderJSON
+	o.Type = EncoderJSON
 	o.Option = NewJSONEncoderOption()
 	return o
 }
 
 // UseJSONOption uses the standard encoder (EncoderJSON constant)
-// as the value of the option Kind, and then uses the value of the given
+// as the value of the option Type, and then uses the value of the given
 // option as the value of the option. If the value of the given option is
 // nil, the default option is used. For details, please refer to the
 // comment section of the EncoderJSON constant. Then return to the option
 // instance itself.
 func (o *EncodingOption) UseJSONOption(option *JSONEncoderOption) *EncodingOption {
-	o.Kind = EncoderJSON
+	o.Type = EncoderJSON
 
 	if option == nil {
 		option = NewJSONEncoderOption()
@@ -533,7 +633,7 @@ func (o *EncodingOption) UseJSONOption(option *JSONEncoderOption) *EncodingOptio
 
 // Build builds and returns a encoder instance.
 func (o *EncodingOption) Build() (Encoder, error) {
-	switch o.Kind {
+	switch o.Type {
 	case EncoderStandard:
 		option := o.Option.(*StandardEncoderOption)
 		option.EncodeSourceLocation = !o.DisableSourceLocation
@@ -543,7 +643,7 @@ func (o *EncodingOption) Build() (Encoder, error) {
 		option.EncodeSourceLocation = !o.DisableSourceLocation
 		return option.Build()
 	default:
-		return nil, ErrorKindInvalid
+		return nil, ErrInvalidType
 	}
 }
 
@@ -551,7 +651,7 @@ func (o *EncodingOption) Build() (Encoder, error) {
 // default optional values.
 func NewEncodingOption() *EncodingOption {
 	return &EncodingOption {
-		Kind: EncoderStandard,
+		Type: EncoderStandard,
 		Option: NewStandardEncoderOption(),
 	}
 }
@@ -576,13 +676,13 @@ const (
 // OutputtingOption is a structure that contains options for outputting
 // log entries.
 type OutputtingOption struct {
-	// Kind represents the type of synchronizer, and its optional options
+	// Type represents the type of synchronizer, and its optional options
 	// are constants starting with Syncer... If not provided, the default
 	// value is the SyncerDiscard constant.
-	Kind string
+	Type string
 
 	// Option represents the value of the option of the synchronizer. The
-	// data type of the value depends on the value of the option Kind. The
+	// data type of the value depends on the value of the option Type. The
 	// option type of different synchronizer types is different. If not
 	// provided, the default value is the default optional value for the
 	// specific synchronizer type.
@@ -597,37 +697,37 @@ type OutputtingOption struct {
 }
 
 // UseStandard uses the standard synchronizer (SyncerFile constant) as
-// the value of the option Kind. For details, please refer to the comment
+// the value of the option Type. For details, please refer to the comment
 // section of the SyncerFile constant. Then return to the option
 // instance itself.
 func (o *OutputtingOption) UseStandard(writer io.Writer) *OutputtingOption {
-	o.Kind = SyncerStandard
+	o.Type = SyncerStandard
 	o.Option = NewStandardSyncerOption().UseWriter(writer)
 	return o
 }
 
 // UseFile uses the file synchronizer (SyncerFile constant) as
-// the value of the option Kind. For details, please refer to the comment
+// the value of the option Type. For details, please refer to the comment
 // section of the SyncerFile constant. Then return to the option
 // instance itself.
 func (o *OutputtingOption) UseFile(name string) *OutputtingOption {
-	o.Kind = SyncerFile
+	o.Type = SyncerFile
 	o.Option = NewFileSyncerOption().UseName(name)
 	return o
 }
 
 // UseDiscard uses the discard synchronizer (SyncerDiscard constant) as
-// the value of the option Kind. For details, please refer to the comment
+// the value of the option Type. For details, please refer to the comment
 // section of the SyncerDiscard constant. Then return to the option
 // instance itself.
 func (o *OutputtingOption) UseDiscard() *OutputtingOption {
-	o.Kind = SyncerDiscard
+	o.Type = SyncerDiscard
 	return o
 }
 
 // Build builds and returns a syncer instance.
 func (o *OutputtingOption) Build() (Syncer, error) {
-	switch o.Kind {
+	switch o.Type {
 	case SyncerStandard:
 		if o.DisableCache {
 			o.Option.(*StandardSyncerOption).UseCacheCapacity(0)
@@ -643,7 +743,7 @@ func (o *OutputtingOption) Build() (Syncer, error) {
 	case SyncerDiscard:
 		return NewDiscardSyncer()
 	default:
-		return nil, ErrorKindInvalid
+		return nil, ErrInvalidType
 	}
 }
 
@@ -651,7 +751,7 @@ func (o *OutputtingOption) Build() (Syncer, error) {
 // default optional values.
 func NewOutputtingOption() *OutputtingOption {
 	return &OutputtingOption {
-		Kind: SyncerDiscard,
+		Type: SyncerDiscard,
 	}
 }
 
@@ -857,7 +957,7 @@ func (o *StandardOption) DisableCache() *StandardOption {
 }
 
 // DisableSampling disable sampling of log entries. For details, see the
-// comment section of the Kind option of the SamplingOption structure.
+// comment section of the Type option of the SamplingOption structure.
 // Then return to the option instance itself.
 func (o *StandardOption) DisableSampling() *StandardOption {
 	o.Sampling = SamplingOption { }
@@ -949,7 +1049,12 @@ func (o *StandardOption) Build() (*StandardLogger, error) {
 		context: context,
 		contextCancel: contextCancel,
 		contextWaitGroup: &sync.WaitGroup { },
+		contextReferences: new(int32),
 	}
+
+	// Initialize the logger reference count to 1 to avoid
+	// repeated close logger.
+	atomic.AddInt32(instance.contextReferences, 1)
 
 	if o.Flushing.Interval > 0 {
 		instance.contextWaitGroup.Add(1)
@@ -990,7 +1095,7 @@ func NewStandardBenchmark(sampling bool, encoder string) (*StandardLogger, error
 	case EncoderJSON:
 		option.Encoding.UseJSON()
 	default:
-		return nil, ErrorKindInvalid
+		return nil, ErrInvalidType
 	}
 
 	option.Encoding.DisableSourceLocation = true

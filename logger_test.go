@@ -93,7 +93,7 @@ func TestEncodingOption(t *testing.T) {
 	option := NewEncodingOption()
 	option.UseStandard()
 
-	assert.Equal(t, option.Kind, EncoderStandard, "Unexpected option value")
+	assert.Equal(t, option.Type, EncoderStandard, "Unexpected option value")
 	assert.IsType(t, &StandardEncoderOption { }, option.Option,
 		"Unexpected option value")
 
@@ -105,7 +105,7 @@ func TestEncodingOption(t *testing.T) {
 
 	option.UseJSON()
 
-	assert.Equal(t, option.Kind, EncoderJSON, "Unexpected option value")
+	assert.Equal(t, option.Type, EncoderJSON, "Unexpected option value")
 	assert.IsType(t, &JSONEncoderOption { }, option.Option,
 		"Unexpected option value")
 
@@ -118,7 +118,7 @@ func TestEncodingOption(t *testing.T) {
 	standardEncoderOption := NewStandardEncoderOption()
 	option.UseStandardOption(standardEncoderOption)
 
-	assert.Equal(t, option.Kind, EncoderStandard, "Unexpected option value")
+	assert.Equal(t, option.Type, EncoderStandard, "Unexpected option value")
 	assert.Equal(t, standardEncoderOption, option.Option,
 		"Unexpected option value")
 	
@@ -131,7 +131,7 @@ func TestEncodingOption(t *testing.T) {
 	jsonEncoderOption := NewJSONEncoderOption()
 	option.UseJSONOption(jsonEncoderOption)
 
-	assert.Equal(t, option.Kind, EncoderJSON, "Unexpected option value")
+	assert.Equal(t, option.Type, EncoderJSON, "Unexpected option value")
 	assert.Equal(t, jsonEncoderOption, option.Option,
 		"Unexpected option value")
 
@@ -148,13 +148,13 @@ func TestSamplingOption(t *testing.T) {
 
 	textSamplerOption := NewTextSamplerOption()
 
-	assert.Equal(t, SamplerText, option.Kind, "Unexpected option value")
+	assert.Equal(t, SamplerText, option.Type, "Unexpected option value")
 	assert.IsType(t, textSamplerOption, option.Option,
 		"Unexpected option value")
 
 	option.UseTextOption(textSamplerOption)
 
-	assert.Equal(t, SamplerText, option.Kind, "Unexpected option value")
+	assert.Equal(t, SamplerText, option.Type, "Unexpected option value")
 	assert.Equal(t, textSamplerOption, option.Option,
 		"Unexpected option value")
 
@@ -170,7 +170,7 @@ func TestOutputtingOption(t *testing.T) {
 
 	option.UseStandard(ioutil.Discard)
 
-	assert.Equal(t, SyncerStandard, option.Kind, "Unexpected option value")
+	assert.Equal(t, SyncerStandard, option.Type, "Unexpected option value")
 	assert.IsType(t, &StandardSyncerOption { }, option.Option,
 		"Unexpected option value")
 	assert.Equal(t, ioutil.Discard, option.Option.(*StandardSyncerOption).
@@ -186,7 +186,7 @@ func TestOutputtingOption(t *testing.T) {
 
 	option.UseFile(os.DevNull)
 
-	assert.Equal(t, SyncerFile, option.Kind, "Unexpected option value")
+	assert.Equal(t, SyncerFile, option.Type, "Unexpected option value")
 	assert.IsType(t, &FileSyncerOption { }, option.Option,
 		"Unexpected option value")
 	assert.Equal(t, os.DevNull, option.Option.(*FileSyncerOption).
@@ -202,7 +202,7 @@ func TestOutputtingOption(t *testing.T) {
 
 	option.UseDiscard()
 
-	assert.Equal(t, SyncerDiscard, option.Kind, "Unexpected option value")
+	assert.Equal(t, SyncerDiscard, option.Type, "Unexpected option value")
 	
 	syncer, err = option.Build()
 	assert.NoError(t, err, "Unexpected build error")
@@ -329,5 +329,41 @@ func TestStandardLoggerPrint(t *testing.T) {
 	err = logger.Fatal(StringMessage("Hello Test!"))
 	assert.NoError(t, err, "Unexpected print error")
 
+	assert.NoError(t, logger.Close(), "Unexpected close error")
+}
+
+func TestStandardLoggerSet(t *testing.T) {
+	logger, err := NewStandard()
+	assert.NoError(t, err, "Unexpected create error")
+	assert.NotNil(t, logger, "Unexpected nil value")
+
+	logger.SetName("testing")
+	assert.Equal(t, "testing", logger.name, "Unexpected instance error")
+
+	logger.SetLevel(LevelFatal)
+	assert.Equal(t, LevelFatal, logger.level, "Unexpected instance error")
+
+	logger.SetSampler(nil)
+	assert.Equal(t, nil, logger.sampler, "Unexpected instance error")
+
+	logger.SetLabels(NewLabel("name", "testing"))
+	assert.Equal(t, 1, logger.labels.count, "Unexpected instance error")
+
+	assert.NoError(t, logger.Close(), "Unexpected close error")
+}
+
+func TestStandardLoggerDuplicate(t *testing.T) {
+	logger, err := NewStandard()
+	assert.NoError(t, err, "Unexpected create error")
+	assert.NotNil(t, logger, "Unexpected nil value")
+
+	instance := logger.Duplicate()
+	assert.NotNil(t, instance, "Unexpected nil value")
+
+	instance.SetName("testing")
+	assert.Equal(t, "testing", instance.name, "Unexpected instance error")
+	assert.Equal(t, "", logger.name, "Unexpected instance error")
+
+	assert.NoError(t, instance.Close(), "Unexpected close error")
 	assert.NoError(t, logger.Close(), "Unexpected close error")
 }

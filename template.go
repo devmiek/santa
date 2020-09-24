@@ -22,6 +22,8 @@
 
 package santa
 
+import "sync/atomic"
+
 // TemplateLogger is the structure of the template logger instance.
 //
 // The template logger is based on the standard logger. Template Logger
@@ -46,7 +48,13 @@ package santa
 // it may cause file handle leakage and loss of some log entry data. For
 // details, please refer to the comment section of the Syncer interface.
 //
-// The API provided by the template logger is thread-safe.
+// Unless explicitly stated, the API provided by the logger is
+// thread-safe. It’s worth noting that APIs that allow post-build
+// changes to logger instances are generally not thread-safe. If you
+// need to change the logger instance (including but not limited to:
+// minimum log entry level, etc.), use the Duplicate function to create
+// a copy of the logger instance, and then make changes to the copy of
+// the logger instance.
 type TemplateLogger struct {
 	StandardLogger
 }
@@ -115,6 +123,22 @@ func (l *TemplateLogger) Fatalf(template string, args ...interface { }) error {
 	pool.message.template.Free(message)
 
 	return err
+}
+
+// Duplicate creates and returns a copy of the logger. If the logger is
+// closed, it returns nil.
+//
+// Please note that the application must explicitly close each copy of
+// the logger, otherwise the logger may be leaked.
+func (l *TemplateLogger) Duplicate() *TemplateLogger {
+	if atomic.AddInt32(l.contextReferences, 1) == 1 {
+		// The logger has been shut down, and using the created copy
+		// may cause panic.
+		return nil
+	}
+
+	instance := *l
+	return &instance
 }
 
 // TemplateOption is a structure that contains options for the template
@@ -205,7 +229,7 @@ func (o *TemplateOption) DisableCache() *TemplateOption {
 }
 
 // DisableSampling disable sampling of log entries. For details, see the
-// comment section of the Kind option of the SamplingOption structure.
+// comment section of the Type option of the SamplingOption structure.
 // Then return to the option instance itself.
 func (o *TemplateOption) DisableSampling() *TemplateOption {
 	o.Sampling = SamplingOption { }
@@ -258,7 +282,7 @@ func NewTemplateBenchmark(sampling bool, encoder string) (*TemplateLogger, error
 	case EncoderJSON:
 		option.Encoding.UseJSON()
 	default:
-		return nil, ErrorKindInvalid
+		return nil, ErrInvalidType
 	}
 
 	option.Encoding.DisableSourceLocation = true

@@ -97,7 +97,7 @@ logger, err := santa.NewTemplateOption().
 
 ```go
 option := santa.NewTemplateOption()
-option.Encoding.Kind = santa.EncoderJSON
+option.Encoding.Type = santa.EncoderJSON
 option.Encoding.Option = santa.NewJSONEncoderOption()
 
 logger, err := option.Build()

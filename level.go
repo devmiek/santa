@@ -54,8 +54,9 @@ const (
 )
 
 var (
-	// ErrorLevelInvalid represents the given invalid log level.
-	ErrorLevelInvalid = errors.New("invalid level")
+	// ErrInvalidLevel represents the log level is invalid. This is
+	// usually because the given log level is invalid.
+	ErrInvalidLevel = errors.New("invalid level")
 )
 
 // Enabled checks whether the given log level is enabled.
@@ -133,7 +134,7 @@ func ParseLevel(name string) (Level, error) {
 	case "fatal":
 		return LevelFatal, nil
 	default:
-		return 0, ErrorLevelInvalid
+		return 0, ErrInvalidLevel
 	}
 }
 

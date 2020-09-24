@@ -29,11 +29,11 @@ import (
 )
 
 var (
-	// ErrorUnsupportedMessage represents that the message type of the
+	// ErrUnsupportedMessage represents that the message type of the
 	// given log entry is not supported, usually because the message
 	// does not correctly implement the message serialization interface
 	// of the encoder.
-	ErrorUnsupportedMessage = errors.New("unsupported message type")
+	ErrUnsupportedMessage = errors.New("unsupported message type")
 )
 
 // EncoderOption is a structure that contains options for the encoder.
@@ -227,7 +227,7 @@ func (e *StandardEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 	case StandardSerializer:
 		buffer = message.SerializeStandard(buffer)
 	default:
-		return nil, ErrorUnsupportedMessage
+		return nil, ErrUnsupportedMessage
 	}
 
 	return append(buffer, '\n'), nil
@@ -330,7 +330,7 @@ func (e *JSONEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 	message, ok := entry.Message.(JSONSerializer)
 
 	if !ok {
-		return nil, ErrorUnsupportedMessage
+		return nil, ErrUnsupportedMessage
 	}
 
 	buffer = append(buffer, '{')

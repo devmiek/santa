@@ -145,3 +145,19 @@ func TestTemplateLoggerPrint(t *testing.T) {
 
 	assert.NoError(t, logger.Close(), "Unexpected close error")
 }
+
+func TestTemplateLoggerDuplicate(t *testing.T) {
+	logger, err := NewTemplate()
+	assert.NoError(t, err, "Unexpected create error")
+	assert.NotNil(t, logger, "Unexpected nil value")
+
+	instance := logger.Duplicate()
+	assert.NotNil(t, instance, "Unexpected nil value")
+
+	instance.SetName("testing")
+	assert.Equal(t, "testing", instance.name, "Unexpected instance error")
+	assert.Equal(t, "", logger.name, "Unexpected instance error")
+
+	assert.NoError(t, instance.Close(), "Unexpected close error")
+	assert.NoError(t, logger.Close(), "Unexpected close error")
+}
