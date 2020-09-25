@@ -23,8 +23,11 @@
 package santa
 
 import (
+	"net"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -71,6 +74,41 @@ func TestFileSyncerOption(t *testing.T) {
 	assert.NoError(t, syncer.Close(), "Unexpected close error")
 }
 
+func TestNetworkSyncerOption(t *testing.T) {
+	closed := make(chan byte, 1)
+
+	go func() {
+		listener, err := net.Listen("tcp", "127.0.0.1:10001")
+		assert.NoError(t, err, "Unexpected listen 127.0.0.1:10001 error")
+		defer listener.Close()
+		for {
+			connect, err := listener.Accept()
+			assert.NoError(t, err, "Unexpected accept error")
+			connect.Close()
+			break
+		}
+		closed <- byte(0)
+	}()
+
+	option := NewNetworkSyncerOption()
+
+	option.UseProtocol(ProtocolTCP)
+	option.UseAddress("127.0.0.1:10001")
+
+	assert.Equal(t, ProtocolTCP, option.Protocol, "Unexpected option value")
+	assert.Equal(t, "127.0.0.1:10001", option.Address, "Unexpected option value")
+
+	syncer, err := option.Build()
+	
+	assert.NoError(t, err, "Unexpected build error")
+	assert.NotNil(t, syncer, "Unexpected build result")
+
+	assert.NotNil(t, syncer.writer, "Unexpected instance error")
+	assert.NoError(t, syncer.Close(), "Unexpected close error")
+
+	<-closed
+}
+
 func TestStandardSyncerWrite(t *testing.T) {
 	syncer, err := NewStandardSyncer()
 	assert.NoError(t, err, "Unexpected create error")
@@ -102,4 +140,61 @@ func TestFileSyncerWrite(t *testing.T) {
 	_, err = syncer.Write([]byte("Hello Test!"))
 	assert.NoError(t, err, "Unexpected write error")
 	assert.NoError(t, syncer.Close(), "Unexpected close error")
+}
+
+func TestNetworkSyncerWrite(t *testing.T) {
+	closed := make(chan byte, 1)
+
+	go func() {
+		listener, err := net.Listen("tcp", "127.0.0.1:10001")
+		assert.NoError(t, err, "Unexpected listen 127.0.0.1:10001 error")
+		defer listener.Close()
+		for count := 0; count < 2; count++ {
+			connect, err := listener.Accept()
+			assert.NoError(t, err, "Unexpected accept error")
+			size, err := connect.Read(make([]byte, 1024))
+			assert.NoError(t, err, "Unexpected read error")
+			assert.NoError(t, connect.Close(), "Unexpected close error")
+			if size < 1 {
+				assert.Fail(t, "Unexpected number of bytes read")
+			}
+		}
+		closed <- byte(0)
+	}()
+
+	option := NewNetworkSyncerOption()
+
+	option.UseProtocol(ProtocolTCP)
+	option.UseAddress("127.0.0.1:10001")
+	option.UseCacheCapacity(0)
+
+	syncer, err := option.Build()
+	
+	assert.NoError(t, err, "Unexpected build error")
+	assert.NotNil(t, syncer, "Unexpected build result")
+
+	assert.NotNil(t, syncer.writer, "Unexpected instance error")
+
+	_, err = syncer.Write([]byte("Hello Test!"))
+	assert.NoError(t, err, "Unexpected write error")
+	syncer.writer.(net.Conn).Close()
+
+	// Test whether the automatic reconnection function works correctly
+	// when the connection is accidentally disconnected.
+	for {
+		_, err = syncer.Write([]byte("Hello Test!"))
+
+		if err != nil {
+			if strings.Contains(err.Error(), "use of closed network connection") {
+				time.Sleep(100 * time.Microsecond)
+				continue
+			}
+		}
+
+		assert.NoError(t, err, "Unexpected write error")
+		break
+	}
+
+	<-closed
+	syncer.Close()
 }

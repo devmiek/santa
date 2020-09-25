@@ -24,6 +24,7 @@ package santa
 
 import (
 	"io/ioutil"
+	"net"
 	"os"
 	"testing"
 	"time"
@@ -172,7 +173,7 @@ func TestOutputtingOption(t *testing.T) {
 
 	assert.Equal(t, SyncerStandard, option.Type, "Unexpected option value")
 	assert.IsType(t, &StandardSyncerOption { }, option.Option,
-		"Unexpected option value")
+		"Unexpected option value type")
 	assert.Equal(t, ioutil.Discard, option.Option.(*StandardSyncerOption).
 		Writer, "Unexpected option value")
 	
@@ -188,7 +189,7 @@ func TestOutputtingOption(t *testing.T) {
 
 	assert.Equal(t, SyncerFile, option.Type, "Unexpected option value")
 	assert.IsType(t, &FileSyncerOption { }, option.Option,
-		"Unexpected option value")
+		"Unexpected option value type")
 	assert.Equal(t, os.DevNull, option.Option.(*FileSyncerOption).
 		FileName, "Unexpected option value")
 	
@@ -199,6 +200,37 @@ func TestOutputtingOption(t *testing.T) {
 		"Unexpected instance error")
 
 	assert.NoError(t, syncer.Close(), "Unexpected close error")
+
+	option.UseNetwork(ProtocolTCP, "127.0.0.1:10001")
+
+	assert.Equal(t, SyncerNetwork, option.Type, "Unexpected option value")
+	assert.IsType(t, &NetworkSyncerOption { }, option.Option,
+		"Unexpected option value type")
+	assert.Equal(t, ProtocolTCP, option.Option.(*NetworkSyncerOption).
+		Protocol, "Unexpected option value")
+	assert.Equal(t, "127.0.0.1:10001", option.Option.(*NetworkSyncerOption).
+		Address, "Unexpected option value")
+
+	closed := make(chan byte, 1)
+
+	go func() {
+		listener, err := net.Listen("tcp", "127.0.0.1:10001")
+		assert.NoError(t, err, "Unexpected listen 127.0.0.1:10001 error")
+		defer listener.Close()
+		for {
+			connect, err := listener.Accept()
+			assert.NoError(t, err, "Unexpected accept error")
+			connect.Close()
+			break
+		}
+		closed <- byte(0)
+	}()
+
+	syncer, err = option.Build()
+	assert.NoError(t, err, "Unexpected build error")
+
+	<-closed
+	syncer.Close()
 
 	option.UseDiscard()
 

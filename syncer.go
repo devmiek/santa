@@ -23,10 +23,17 @@
 package santa
 
 import (
+	"context"
+	"errors"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"runtime"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 // Syncer is the public interface of the synchronizer.
@@ -116,7 +123,8 @@ func NewSyncerOption() SyncerOption {
 // data type of the instance when it is closed, and it does not close the
 // instance (if supported).
 //
-// Please note that standard synchronizers are not thread-safe.
+// Please note that if the mutex is disabled, the API provided by
+// the synchronizer is not thread-safe.
 type StandardSyncer struct {
 	writer io.Writer
 	buffer []byte
@@ -323,7 +331,8 @@ func NewStandardSyncer() (*StandardSyncer, error) {
 // The file synchronizer is based on the standard synchronizer and
 // uses a file on the local hard disk as a specific storage device.
 //
-// Please note that file synchronizers are not thread-safe.
+// Please note that if the mutex is disabled, the API provided by
+// the synchronizer is not thread-safe.
 type FileSyncer struct {
 	*StandardSyncer
 }
@@ -408,7 +417,222 @@ func NewFileSyncer() (*FileSyncer, error) {
 	return NewFileSyncerOption().Build()
 }
 
-// DiscardSyncer is the structure of the lost synchronizer instance.
+// NetworkSyncer is the structure of an instance of a network
+// synchronizer.
+//
+// The network synchronizer is based on the standard synchronizer
+// and uses TCP/IP or Unix streams as a specific storage device.
+//
+// Please note that if the mutex is disabled, the API provided by
+// the synchronizer is not thread-safe.
+type NetworkSyncer struct {
+	*StandardSyncer
+
+	protocol string
+	address string
+
+	context context.Context
+	contextCancel context.CancelFunc
+	contextWaitGroup *sync.WaitGroup
+
+	disconnected int32
+}
+
+func (s *NetworkSyncer) reconnect() {
+	defer s.contextWaitGroup.Done()
+
+	dialer := &net.Dialer {
+		Timeout: time.Second * 5,
+	}
+
+	for {
+		connect, err := dialer.DialContext(s.context, s.protocol, s.address)
+
+		if err != nil {
+			// If the synchronizer is closing, give up the reconnection
+			// and return. To avoid calling the function again, the value
+			// of `s.disconnected` is not reset.
+			if s.context.Err() != nil {
+				return
+			}
+
+			// Reconnection failed, try again after an interval of 1
+			// second.
+			select {
+			case <-time.After(1 * time.Second):
+				continue
+			case <-s.context.Done():
+				return
+			}
+			
+		}
+
+		s.writer.(net.Conn).Close()
+		s.writer = connect
+		break
+	}
+
+	atomic.CompareAndSwapInt32(&s.disconnected, 1, 0)
+}
+
+// Write writes the data of a given buffer slice to a specific storage
+// device. If the internal cache is enabled, the internal cache is
+// written first. If the capacity of the internal cache is saturated,
+// it is automatically flushed once.
+//
+// Finally, it returns the number of bytes actually written and any
+// errors encountered.
+func (s *NetworkSyncer) Write(buffer []byte) (int, error) {
+	size, err := s.StandardSyncer.Write(buffer)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "use of closed network connection") {
+			// The connection to the other end of the network may have
+			// been interrupted unexpectedly, try to re-establish the
+			// connection.
+			if atomic.CompareAndSwapInt32(&s.disconnected, 0, 1) {
+				s.contextWaitGroup.Add(1)
+				go s.reconnect()
+			}
+		}
+	}
+
+	return size, err
+}
+
+// Close automatically flushes the internal cache once, and then releases
+// any kernel objects that have been opened (including but not limited to:
+// network handles, etc.).
+//
+// Finally, any errors encountered are returned.
+func (s *NetworkSyncer) Close() error {
+	s.contextCancel()
+	s.contextWaitGroup.Wait()
+	s.StandardSyncer.Close()
+	return s.StandardSyncer.writer.(net.Conn).Close()
+}
+
+const (
+	// ProtocolTCP represents that the communication protocol of the
+	// network synchronizer is TCP/IP. For details, please refer to the
+	// comment section of the NetworkSyncer structure.
+	ProtocolTCP = "tcp"
+
+	// ProtocolUnix represents that the communication protocol of the
+	// network synchronizer is Unix Domain Socket. For details, please
+	// refer to the comment section of the NetworkSyncer structure.
+	ProtocolUnix = "unix"
+)
+
+var (
+	// ErrInvalidProtocol represents that the network protocol is invalid
+	// or unsupported. This is usually because the value of the given
+	// network protocol type is invalid.
+	ErrInvalidProtocol = errors.New("invalid network protocol")
+)
+
+// NetworkSyncerOption is a structure containing network synchronizer
+// options.
+type NetworkSyncerOption struct {
+	SyncerOption
+
+	// Protocol represents the communication protocol used by the network
+	// synchronizer, which will determine how the network synchronizer
+	// establishes a connection with the other end of the network. The
+	// optional values are defined by the constants at the beginning of
+	// Protocol...
+	//
+	// If not provided, the default value is the ProtocolUnix constant.
+	Protocol string
+	
+	// Address represents the address of the other end of the network
+	// where the network synchronizer uses a specific communication
+	// protocol to establish a connection. The address format depends on
+	// the value of the Protocol option.
+	//
+	// If not provided, the default value is /var/run/santa.sock. It is
+	// worth noting that the default value is invalid for Windows.
+	Address string
+}
+
+// UseCacheCapacity uses the given capacity as the value of the option
+// CacheCapacity. For details, please refer to the comment section of
+// the CacheCapacity option. Then return to the option instance itself.
+func (o *NetworkSyncerOption) UseCacheCapacity(capacity int) *NetworkSyncerOption {
+	o.CacheCapacity = capacity
+	return o
+}
+
+// UseProtocol uses the given protocol as the value of the option Protocol.
+// Please refer to the comment section of the Protocol option for details.
+// Then return to the option instance itself.
+func (o *NetworkSyncerOption) UseProtocol(protocol string) *NetworkSyncerOption {
+	o.Protocol = protocol
+	return o
+}
+
+// UseAddress uses the given address as the value of the option Address,
+// please refer to the comment section of the Address option for details.
+// Then return to the option instance itself.
+func (o *NetworkSyncerOption) UseAddress(address string) *NetworkSyncerOption {
+	o.Address = address
+	return o
+}
+
+// Build builds and returns an instance of the network synchronizer and
+// any errors encountered.
+func (o *NetworkSyncerOption) Build() (*NetworkSyncer, error) {
+	switch o.Protocol {
+	case ProtocolTCP:
+	case ProtocolUnix:
+	default:
+		return nil, ErrInvalidProtocol
+	}
+
+	connect, err := net.Dial(o.Protocol, o.Address)
+	
+	if err != nil {
+		return nil, err
+	}
+
+	option := NewStandardSyncerOption()
+
+	option.SyncerOption = o.SyncerOption
+	option.Writer = connect
+	
+	syncer, err := option.Build()
+
+	if err != nil {
+		connect.Close()
+		return nil, err
+	}
+
+	context, contextCancel := context.WithCancel(
+		context.Background())
+
+	return &NetworkSyncer {
+		StandardSyncer: syncer,
+
+		protocol: o.Protocol,
+		address: o.Address,
+
+		context: context,
+		contextCancel: contextCancel,
+		contextWaitGroup: &sync.WaitGroup { },
+	}, nil
+}
+
+// NewNetworkSyncerOption creates and returns a network synchronizer
+// option instance with default option values.
+func NewNetworkSyncerOption() *NetworkSyncerOption {
+	return &NetworkSyncerOption {
+		SyncerOption: NewSyncerOption(),
+		Protocol: ProtocolUnix,
+		Address: "/var/run/santa.sock",
+	}
+}
+
+// DiscardSyncer is the structure of the discard synchronizer instance.
 //
 // The discard synchronizer is based on the standard synchronizer,
 // using ioutil.Discard as an instance of a specific storage device.

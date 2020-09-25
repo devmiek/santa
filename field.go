@@ -353,7 +353,7 @@ type ElementObject []Field
 // slice.
 func (e ElementObject) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '{')
-	last := len(e) - 1
+	tail := len(e) - 1
 
 	for index := 0; index < len(e); index++ {
 		buffer = append(buffer, '"')
@@ -361,7 +361,7 @@ func (e ElementObject) SerializeJSON(buffer []byte) []byte {
 		buffer = append(buffer, "\": "...)
 		buffer = e[index].SerializeJSON(buffer)
 
-		if index < last {
+		if index < tail {
 			buffer = append(buffer, ", "...)
 		}
 	}
@@ -392,12 +392,12 @@ type ElementObjects []ElementObject
 // slice.
 func (e ElementObjects) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
-	last := len(e) - 1
+	tail := len(e) - 1
 
 	for index := 0; index < len(e); index++ {
 		buffer = e[index].SerializeJSON(buffer)
 
-		if index < last {
+		if index < tail {
 			buffer = append(buffer, ", "...)
 		}
 	}
@@ -428,12 +428,12 @@ type ElementInts []int64
 // slice.
 func (e ElementInts) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
-	last := len(e) - 1
+	tail := len(e) - 1
 
 	for index := 0; index < len(e); index++ {
 		buffer = strconv.AppendInt(buffer, e[index], 10)
 
-		if index < last {
+		if index < tail {
 			buffer = append(buffer, ", "...)
 		}
 	}
@@ -464,12 +464,12 @@ type ElementUint64s []uint64
 // slice.
 func (e ElementUint64s) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
-	last := len(e) - 1
+	tail := len(e) - 1
 
 	for index := 0; index < len(e); index++ {
 		buffer = strconv.AppendUint(buffer, e[index], 10)
 
-		if index < last {
+		if index < tail {
 			buffer = append(buffer, ", "...)
 		}
 	}
@@ -500,13 +500,13 @@ type ElementFloat32s []float32
 // slice.
 func (e ElementFloat32s) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
-	last := len(e) - 1
+	tail := len(e) - 1
 
 	for index := 0; index < len(e); index++ {
 		buffer = strconv.AppendFloat(buffer, float64(e[index]),
 			'f', -1, 32)
 
-		if index < last {
+		if index < tail {
 			buffer = append(buffer, ", "...)
 		}
 	}
@@ -537,13 +537,13 @@ type ElementFloat64s []float64
 // slice.
 func (e ElementFloat64s) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
-	last := len(e) - 1
+	tail := len(e) - 1
 
 	for index := 0; index < len(e); index++ {
 		buffer = strconv.AppendFloat(buffer, float64(e[index]),
 			'f', -1, 64)
 
-		if index < last {
+		if index < tail {
 			buffer = append(buffer, ", "...)
 		}
 	}
@@ -574,12 +574,12 @@ type ElementBooleans []bool
 // slice.
 func (e ElementBooleans) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
-	last := len(e) - 1
+	tail := len(e) - 1
 
 	for index := 0; index < len(e); index++ {
 		buffer = strconv.AppendBool(buffer, e[index])
 
-		if index < last {
+		if index < tail {
 			buffer = append(buffer, ", "...)
 		}
 	}
@@ -610,14 +610,14 @@ type ElementStrings []string
 // slice.
 func (e ElementStrings) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
-	last := len(e) - 1
+	tail := len(e) - 1
 
 	for index := 0; index < len(e); index++ {
 		buffer = append(buffer, '"')
 		buffer = append(buffer, e[index]...)
 		buffer = append(buffer, '"')
 
-		if index < last {
+		if index < tail {
 			buffer = append(buffer, ", "...)
 		}
 	}
@@ -648,12 +648,12 @@ type ElementTimes []time.Time
 // slice.
 func (e ElementTimes) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '[')
-	last := len(e) - 1
+	tail := len(e) - 1
 
 	for index := 0; index < len(e); index++ {
 		buffer = strconv.AppendInt(buffer, e[index].UnixNano(), 10)
 
-		if index < last {
+		if index < tail {
 			buffer = append(buffer, ", "...)
 		}
 	}

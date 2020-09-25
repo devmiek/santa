@@ -657,17 +657,22 @@ func NewEncodingOption() *EncodingOption {
 }
 
 const (
-	// SyncerStandard means that the type of synchronizer is a standard
+	// SyncerStandard represents that the type of synchronizer is a standard
 	// synchronizer. For details, please refer to the notes section of
 	// StandardSyncer.
 	SyncerStandard = "standard"
 
-	// SyncerFile means that the type of synchronizer is a file
+	// SyncerFile represents that the type of synchronizer is a file
 	// synchronizer. For details, please refer to the notes section of
 	// FileSyncer.
 	SyncerFile = "file"
 
-	// SyncerDiscard means that the type of synchronizer is a discard
+	// SyncerNetwork represents the type of synchronizer is a network
+	// synchronizer. For details, please refer to the notes section of the
+	// NetworkSyncer structure.
+	SyncerNetwork = "network"
+
+	// SyncerDiscard represents that the type of synchronizer is a discard
 	// synchronizer. For details, please refer to the notes section of
 	// DiscardSyncer.
 	SyncerDiscard = "discard"
@@ -716,6 +721,20 @@ func (o *OutputtingOption) UseFile(name string) *OutputtingOption {
 	return o
 }
 
+// UseNetwork uses the network synchronizer (SyncerNetwork constant) as the
+// value of the option Type. For details, please refer to the comment section
+// of the Type option and SyncerNetwork constant. Then return to the option
+// instance itself.
+//
+// The optional value of the parameter protocol is defined by the constants
+// at the beginning of Protocol..., and the format of the value of the
+// parameter address depends on the value of the parameter protocol.
+func (o *OutputtingOption) UseNetwork(protocol, address string) *OutputtingOption {
+	o.Type = SyncerNetwork
+	o.Option = NewNetworkSyncerOption().UseProtocol(protocol).UseAddress(address)
+	return o
+}
+
 // UseDiscard uses the discard synchronizer (SyncerDiscard constant) as
 // the value of the option Type. For details, please refer to the comment
 // section of the SyncerDiscard constant. Then return to the option
@@ -740,6 +759,12 @@ func (o *OutputtingOption) Build() (Syncer, error) {
 		}
 
 		return o.Option.(*FileSyncerOption).Build()
+	case SyncerNetwork:
+		if o.DisableCache {
+			o.Option.(*StandardSyncerOption).UseCacheCapacity(0)
+		}
+		
+		return o.Option.(*NetworkSyncerOption).Build()
 	case SyncerDiscard:
 		return NewDiscardSyncer()
 	default:
