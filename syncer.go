@@ -165,25 +165,31 @@ func (s *StandardSyncer) Write(buffer []byte) (int, error) {
 	}
 
 	if s.buffer != nil {
-		if (len(s.buffer) + len(buffer)) >= s.capacity {
+		size := len(s.buffer) + len(buffer)
+
+		if size >= s.capacity {
 			_, err := s.flush()
 
 			if err != nil {
 				if s.mutex != nil {
-					s.mutex.Unlock()
+					s.mutex.Lock()
 				}
 
 				return 0, err
 			}
+
+			size = len(buffer)
 		}
 
-		s.buffer = append(s.buffer, buffer...)
+		if size < s.capacity {
+			s.buffer = append(s.buffer, buffer...)
 
-		if s.mutex != nil {
-			s.mutex.Unlock()
+			if s.mutex != nil {
+				s.mutex.Unlock()
+			}
+
+			return len(buffer), nil
 		}
-
-		return len(buffer), nil
 	}
 
 	size, err := s.writer.Write(buffer)
