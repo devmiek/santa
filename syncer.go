@@ -138,6 +138,7 @@ type StandardSyncer struct {
 //
 // Please note that this function is not thread-safe.
 func (s *StandardSyncer) flush() (int, error) {
+	suspended := s.mutex != nil && s.mutex.Suspend()
 	size, err := s.writer.Write(s.buffer)
 
 	if err != nil {
@@ -145,10 +146,19 @@ func (s *StandardSyncer) flush() (int, error) {
 			s.buffer = append(s.buffer[ : 0], s.buffer[size : ]...)
 		}
 
+		if suspended {
+			s.mutex.Resume()
+		}
+
 		return size, err
 	}
 
 	s.buffer = s.buffer[ : 0]
+
+	if suspended {
+		s.mutex.Resume()
+	}
+
 	return size, nil
 }
 
@@ -172,7 +182,7 @@ func (s *StandardSyncer) Write(buffer []byte) (int, error) {
 
 			if err != nil {
 				if s.mutex != nil {
-					s.mutex.Lock()
+					s.mutex.Unlock()
 				}
 
 				return 0, err
@@ -192,10 +202,14 @@ func (s *StandardSyncer) Write(buffer []byte) (int, error) {
 		}
 	}
 
+	if s.mutex != nil {
+		s.mutex.Suspend()
+	}
+
 	size, err := s.writer.Write(buffer)
 
 	if s.mutex != nil {
-		s.mutex.Unlock()
+		s.mutex.UnlockAndResume()
 	}
 
 	return size, err
@@ -262,7 +276,7 @@ type StandardSyncerOption struct {
 	// ioutil.Discard.
 	Writer io.Writer
 
-	// DisableMutex indicates whether to disable the write mutex
+	// DisableMutex represents whether to disable the write mutex
 	// protection inside the synchronizer. If a particular storage
 	// device is thread-safe, disabling the internal write mutex
 	// protection can improve performance. If disabled, the internal

@@ -103,6 +103,8 @@ func (l *SpinLock) Unlock() {
 
 // LockAndSuspend obtains the ownership of the lock, then suspends the
 // preemption of the ownership of the lock, and returns after success.
+//
+// For details, see the comment section of the Suspend function.
 func (l *SpinLock) LockAndSuspend() {
 	for count := 1; ; count++ {
 		if atomic.CompareAndSwapInt32(&l.status, 0, 2) {
@@ -129,12 +131,43 @@ func (l *SpinLock) LockAndSuspend() {
 
 // UnlockAndResume releases the lock ownership, and then resumes the
 // preemption of the lock ownership.
+//
+// For details, see the comment section of the Resume function.
 func (l *SpinLock) UnlockAndResume() {
 	l.condition.L.Lock()
 
 	// If the unlocking is successful, all the coroutines that try to
 	// seize the lock are awakened. Otherwise, the behavior is undefined.
 	if atomic.CompareAndSwapInt32(&l.status, 2, 0) {
+		l.condition.Broadcast()
+	}
+
+	l.condition.L.Unlock()
+}
+
+// Suspend passively suspends the coroutines trying to preempt the lock
+// ownership to alleviate the CPU time overhead caused by one or more
+// coroutines continuously preempting the lock ownership.
+//
+// Please note that the passive suspension operation can only succeed
+// if the lock ownership has been obtained.
+//
+// If the passive suspension succeeds, it returns true, otherwise it
+// returns false.
+func (l *SpinLock) Suspend() bool {
+	return atomic.CompareAndSwapInt32(&l.status, 1, 2)
+}
+
+// Resume resumes one or more suspended coroutines that are trying to
+// preempt lock ownership. If the lock is not moved to suspend ownership
+// preemption, no action will be performed.
+//
+// In certain scenarios, using the UnlockAndResume function may be a
+// better choice.
+func (l *SpinLock) Resume() {
+	l.condition.L.Lock()
+
+	if atomic.CompareAndSwapInt32(&l.status, 2, 1) {
 		l.condition.Broadcast()
 	}
 

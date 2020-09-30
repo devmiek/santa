@@ -53,7 +53,7 @@ func TestSpinLock(t *testing.T) {
 		go handler(times)
 	}
 
-	waitGroup.Add(1)
+	waitGroup.Add(2)
 
 	go func() {
 		defer waitGroup.Done()
@@ -66,8 +66,21 @@ func TestSpinLock(t *testing.T) {
 		locker.UnlockAndResume()
 	}()
 
+	go func () {
+		defer waitGroup.Done()
+
+		locker.Lock()
+
+		assert.True(t, locker.Suspend(), "Unexpectedly suspend")
+		time.Sleep(time.Millisecond * 100)
+		locker.Resume()
+		
+		locker.Unlock()
+	}()
+
 	waitGroup.Wait()
 
+	assert.Equal(t, int32(0), locker.status, "Unexpectedly status")
 	assert.Len(t, values, times * runtime.NumCPU(),
 		"Unexpected number of elements")
 }

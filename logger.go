@@ -659,12 +659,12 @@ func NewEncodingOption() *EncodingOption {
 const (
 	// SyncerStandard represents that the type of synchronizer is a standard
 	// synchronizer. For details, please refer to the notes section of
-	// StandardSyncer.
+	// StandardSyncer structure.
 	SyncerStandard = "standard"
 
 	// SyncerFile represents that the type of synchronizer is a file
 	// synchronizer. For details, please refer to the notes section of
-	// FileSyncer.
+	// FileSyncer structure.
 	SyncerFile = "file"
 
 	// SyncerNetwork represents the type of synchronizer is a network
@@ -674,7 +674,7 @@ const (
 
 	// SyncerDiscard represents that the type of synchronizer is a discard
 	// synchronizer. For details, please refer to the notes section of
-	// DiscardSyncer.
+	// DiscardSyncer structure.
 	SyncerDiscard = "discard"
 )
 
@@ -761,7 +761,7 @@ func (o *OutputtingOption) Build() (Syncer, error) {
 		return o.Option.(*FileSyncerOption).Build()
 	case SyncerNetwork:
 		if o.DisableCache {
-			o.Option.(*StandardSyncerOption).UseCacheCapacity(0)
+			o.Option.(*NetworkSyncerOption).UseCacheCapacity(0)
 		}
 		
 		return o.Option.(*NetworkSyncerOption).Build()
