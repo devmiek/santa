@@ -36,7 +36,9 @@ type StringMessage string
 // appends it to the given buffer slice, and then returns the appended buffer
 // slice.
 func (m StringMessage) SerializeStandard(buffer []byte) []byte {
-	return append(buffer, m...)
+	buffer = append(buffer, '"')
+	buffer = append(buffer, m...)
+	return append(buffer, '"')
 }
 
 // SerializeJSON serializes the message into a JSON string and appends it
@@ -70,7 +72,9 @@ type TemplateMessage struct {
 // appends it to the given buffer slice, and then returns the appended buffer
 // slice.
 func (m TemplateMessage) SerializeStandard(buffer []byte) []byte {
-	return append(buffer, fmt.Sprintf(m.Template, m.Args...)...)
+	buffer = append(buffer, '"')
+	buffer = append(buffer, fmt.Sprintf(m.Template, m.Args...)...)
+	return append(buffer, '"')
 }
 
 // SerializeJSON serializes the message into a JSON string and appends it
@@ -116,7 +120,7 @@ func (m StructMessage) SerializeJSON(buffer []byte) []byte {
 	if len(m.Fields) == 0 {
 		return append(buffer, `"}`...)
 	}
-	buffer = append(buffer, `", "fields": `...)
+	buffer = append(buffer, `", "payload": `...)
 	buffer = m.Fields.SerializeJSON(buffer)
 	return append(buffer, '}')
 }

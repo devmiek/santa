@@ -331,7 +331,7 @@ type FileSyncer struct {
 //
 // Finally, any errors encountered are returned.
 func (s *FileSyncer) Close() error {
-	s.StandardSyncer.Close()
+	_ = s.StandardSyncer.Close()
 	return s.writer.(*os.File).Close()
 }
 
@@ -366,7 +366,7 @@ func (o *FileSyncerOption) Build() (*FileSyncer, error) {
 		o.FileName = os.DevNull
 	}
 	handle, err := os.OpenFile(o.FileName, os.O_RDWR |
-		os.O_CREATE | os.O_APPEND, 0666)
+		os.O_CREATE | os.O_APPEND, os.ModeAppend)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func (o *FileSyncerOption) Build() (*FileSyncer, error) {
 	option.Writer = handle
 	syncer, err := option.Build()
 	if err != nil {
-		handle.Close()
+		_ = handle.Close()
 		return nil, err
 	}
 	return &FileSyncer {
@@ -443,7 +443,7 @@ func (s *NetworkSyncer) reconnect() {
 				return
 			}
 		}
-		s.writer.(net.Conn).Close()
+		_ = s.writer.(net.Conn).Close()
 		s.writer = connect
 		break
 	}
@@ -481,7 +481,7 @@ func (s *NetworkSyncer) Write(buffer []byte) (int, error) {
 func (s *NetworkSyncer) Close() error {
 	s.contextCancel()
 	s.contextWaitGroup.Wait()
-	s.StandardSyncer.Close()
+	_ = s.StandardSyncer.Close()
 	return s.StandardSyncer.writer.(net.Conn).Close()
 }
 
@@ -571,7 +571,7 @@ func (o *NetworkSyncerOption) Build() (*NetworkSyncer, error) {
 	option.Writer = connect
 	syncer, err := option.Build()
 	if err != nil {
-		connect.Close()
+		_ = connect.Close()
 		return nil, err
 	}
 	context, contextCancel := context.WithCancel(

@@ -996,12 +996,12 @@ func (o *StandardOption) Build() (*StandardLogger, error) {
 		UseEncoder(encoder).
 		UseSyncer(syncer).Build()
 	if err != nil {
-		syncer.Close()
+		_ = syncer.Close()
 		return nil, err
 	}
 	errorSyncer, err := o.ErrorOutputting.Build()
 	if err != nil {
-		exporter.Close()
+		_ = exporter.Close()
 		return nil, err
 	}
 	errorExporter, err := NewStandardExporterOption().
@@ -1009,8 +1009,8 @@ func (o *StandardOption) Build() (*StandardLogger, error) {
 		UseEncoder(encoder).
 		UseSyncer(errorSyncer).Build()
 	if err != nil {
-		exporter.Close()
-		errorSyncer.Close()
+		_ = exporter.Close()
+		_ = errorSyncer.Close()
 		return nil, err
 	}
 
@@ -1029,8 +1029,8 @@ func (o *StandardOption) Build() (*StandardLogger, error) {
 	}).Build()
 
 	if err != nil {
-		exporter.Close()
-		errorSyncer.Close()
+		_ = exporter.Close()
+		_ = errorSyncer.Close()
 		return nil, err
 	}
 

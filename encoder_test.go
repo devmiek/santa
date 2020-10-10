@@ -70,7 +70,7 @@ func TestStandardEncoderEncode(t *testing.T) {
 	buffer, err = encoder.Encode(buffer, entry)
 	assert.NoError(t, err, "Unexpected standard encoder error")
 
-	var expected = fmt.Sprintf("%s %s:%d %s %s [%s] %s\n",
+	var expected = fmt.Sprintf("%s %s:%d %s %s [%s] \"%s\"\n",
 		entry.Time.Format(time.RFC3339Nano),
 		entry.SourceLocation.File,
 		entry.SourceLocation.Line,

@@ -9,225 +9,286 @@ go get -u github.com/nobody-night/santa
 ```
 
 ## Getting Started
-With Santa, you can easily implement a simple, fast, and easily expandable structured logging function in your application, without having to pay attention to log output, encoding, and storage.
+Santa is a simple, fast and extensible structured logging package implemented in Go. With Santa, you can quickly implement the printing function of structured log entries with multiple selectable log levels (severities) in the application, and output these log entries to one or more compatible specific storage devices.
 
-Santa currently supports a variety of loggers, including but not limited to template loggers, structured loggers, etc. If your application needs to customize the message structure of log entries, you can also write customizable loggers and log message implementations based on standard loggers.
+Santa provides multiple types of loggers for applications, each of which provides efficient and easy-to-use APIs. If the provided loggers and APIs do not meet the workload requirements of the application, you can easily build custom loggers and APIs on top of these loggers.
 
-In the following, I will briefly introduce you how to use several common loggers provided by Santa to record logs in your application:
+Next, I will show you how to use the various loggers and commonly used APIs provided by Santa.
 
 ### Structured Logger
-In a modern production environment, the most frequently used log entry structure may be JSON-encoded log entry data. This can be done easily in Santa using a structured logger:
-
-```go
-// Create a structured logger instance using default optional values.
-logger, err := santa.NewStruct()
-
-if err != nil {
-    println(err)
-    return
-}
-
-// Loggers should be explicitly closed when they are no longer in use.
-defer logger.Close()
-
-logger.Infos("Hello World!",
-    santa.String("name", "santa"),
-    santa.Int("age", 10),
-)
-```
-
-In the above sample code, a structured logger with default options is used to print a structured log message with INFO log level to the standard output device (`os.Stdout`, `os.Stderr`). If you format the output manually, it should look like this:
+The first thing to show you is the structured logger. As the name implies, the structured logger provides an API for printing structured log entries. The payload encoding of a common structured log entry is JSON, which contains one or more fields. The following shows the JSON payload of a structured log entry:
 
 ```json
 {
-    "timestamp": 1597325688546993100,
+    "status": 500,
+    "message": "Internal server error.",
+    "requestId": "d4b02c71-7ca0-46c3-b18c-9e79f55df3c9"
+}
+```
+
+Different from common single-line multi-field string log entries, structured log entries are easier to automatically analyze and query. The following example shows how to use the API provided by the structured logger to print out a simple structured log entry:
+
+```go
+// Create a default structured logger instance.
+logger, _ := santa.NewStruct()
+
+// The created logger instance must be explicitly closed.
+defer logger.Close()
+
+// Print out a structured log entry to standard output.
+logger.Infos("Internal server error.",
+    santa.Int("status", 500),
+    santa.String("message", "Internal server error."),
+    santa.String("requestId", "d4b02c71-7ca0-46c3-b18c-9e79f55df3c9"),
+)
+```
+
+The following shows the actual output structured log entries, which have been formatted for human reading:
+
+```json
+{
+    "timestamp": 1602324290419642100,
     "sourceLocation": {
         "file": "main.go",
-        "line": 18,
+        "line": 12,
         "function": "main.main"
     },
     "labels": null,
     "name": null,
     "level": "INFO",
     "message": {
-        "text": "Hello Santa!",
-        "fields": {
-            "name": "santa",
-            "age": 100
+        "text": "Internal server error.",
+        "payload": {
+            "status": 500,
+            "message": "Internal server error.",
+            "requestId": "d4b02c71-7ca0-46c3-b18c-9e79f55df3c9"
         }
     }
 }
 ```
 
-Of course, the timestamp layout style and key names used in JSON encoding can be customized.
+It is worth noting that the timestamp layout, key names and some empty key values shown above can all be customized.
 
-### Template Logger
-If your application does not need to record one or more log fields, or does not need to record structured log entries, then a template logger may be a good choice.
-
-Compared with the structured logger, the template logger provides an easier-to-use string formatting API for applications, just like using the `fmt.Sprintf` function. It is worth noting that because the template logger needs to format log messages according to template strings and parameters, its log entry output performance is lower than other types of loggers, because the template logger still uses the `fmt.Sprintf` function to Format the log message.
-
-```go
-// Create a template logger instance with default optional values.
-logger, err := santa.NewTemplate()
-
-if err != nil {
-    println(err)
-    return
-}
-
-// Loggers should be explicitly closed when they are no longer in use.
-defer logger.Close()
-
-logger.Infof("My name is %s and my age is %d.", "santa", 10)
-```
-
-Unlike the structured logger, the template logger uses a standard encoder to encode each log entry by default. If your application needs to output JSON-encoded log entries, you can specify the JSON encoder when building the template logger instance:
-
-#### Use Builder Style
-
-```go
-logger, err := santa.NewTemplateOption().
-    UseEncoding(
-        santa.NewEncodingOption().
-            UseJSON(),
-    ).Build()
-```
-
-#### Use Option Style
-
-```go
-option := santa.NewTemplateOption()
-option.Encoding.Type = santa.EncoderJSON
-option.Encoding.Option = santa.NewJSONEncoderOption()
-
-logger, err := option.Build()
-```
-
-The more convenient option style is:
-
-```go
-option := santa.NewTemplateOption()
-option.Encoding.UseJSON()
-// You can also: `option.Encoding.UseJSONOption()`.
-
-logger, err := option.Build()
-```
-
-The sample code above uses the template logger built with default options to print out a template log entry with the log level INFO to the standard output device (`os.Stdout`, `os.Stderr`). If everything is normal, you should see something similar to the following:
+### Template logger
+The next thing to show you is the template logger. Unlike the structured logger, the template logger provides an API for printing template log entries, and its style is similar to the logger provided by the standard library. The payload encoding of common template log entries is a single-line string containing one or more field values separated by specific characters. The following shows the single-line string payload of the template log entry:
 
 ```text
-2020-08-13T21:56:30.0719939+08:00 main.go:18 [INFO] My name is santa and my age is 10.
+500 "Internal server error." "d4b02c71-7ca0-46c3-b18c-9e79f55df3c9"
 ```
+
+Generally, log entries encoded by single-line strings are easier for humans to read, but they are not conducive to automated analysis and query. The following example shows how to use the API provided by the template logger to print out a simple template log entry:
+
+```go
+// Create a default template logger instance.
+logger, _ := santa.NewTemplate()
+
+// The created logger instance must be explicitly closed.
+defer logger.Close()
+
+// Print out a template log entry to standard output.
+logger.Infof("Status: %d, Message: %s, Request ID: %s",
+    500, "Internal server error.",
+    "d4b02c71-7ca0-46c3-b18c-9e79f55df3c9",
+)
+```
+
+The following shows the actual output template log entries:
+
+```text
+2020-10-10T18:41:04.5541337+08:00 main.go:17 no-labels [INFO] "Status: 500, Message: Internal server error., Request ID: d4b02c71-7ca0-46c3-b18c-9e79f55df3c9"
+```
+
+It is worth noting that the `NewTemplate` function will create a template logger instance with the default option values. Among them, the default log entry encoder is `EncoderStandard`. If you need a template logger to output structured log entries, you should use the `EncoderJSON` encoder. The following example shows how to create a template logger instance using the JSON encoder:
+
+```go
+// Create an option instance with default option values.
+option := santa.NewTemplateOption()
+
+// Change the encoder type to `EncoderJSON`.
+option.Encoding.UseJSON()
+// Optional: option.Encoding.UseJSONOption(...)
+// Optional: option.UseEncoding(...)
+
+// Use custom options to build a template logger instance.
+logger, _ := option.Build()
+```
+
+Other types of loggers also support similar APIs. For details, please refer to the comment section of the `StandardOption` structure.
 
 ### Standard Logger
-If your application requires a custom log message structure or only string log messages, you can use the standard logger.
+The last thing to show you is the standard logger. The standard logger provides an API for printing custom log entry message types, which means you can use the standard logger to print custom log entry message types, or you can build a custom logger based on the standard logger. It is worth noting that both the structured logger and the template logger are built on the standard logger.
 
-Unlike structured loggers and template loggers, standard loggers provide log message output APIs for applications that accept any log message values that have implemented the `santa.Message` interface, which means you can easily customize one or more log message structures.
-
-```go
-// Create a standard logger instance with default optional values.
-logger, err := santa.NewStandard()
-
-if err != nil {
-    println(err)
-    return
-}
-
-// Loggers should be explicitly closed when they are no longer in use.
-defer logger.Close()
-
-logger.Info(santa.StringMessage("Hello World!"))
-```
-
-In the above sample code, a standard logger instance is constructed using the default optional values, and then a log entry of only string messages with a log level of INFO is output to the standard output device (`os.Stdout`, `os.Stderr`). If everything is normal, you should see something similar to the following:
+The API provided by the standard logger accepts any log entry messages that have implemented the `Message` interface and the corresponding serialization interface, such as `StructMessage` and `TemplateMessage` structures. Santa provides a built-in pure string log entry message type named `StringMessage`. The following shows the single-line string payload of the string log entry:
 
 ```text
-2020-08-14T16:09:58.9404613+08:00 main.go:43 [INFO] Hello World!
+Internal server error.
 ```
 
-In fact, structured loggers and template loggers are implemented based on standard loggers. The log message output API provided by the structured logger uses `santa.StructMessage` as the log message structure; the log message output API provided by the template logger uses `santa.TemplateMessage` as the log message structure.
+The following example shows how to use the API provided by the standard logger to print out a simple string log entry:
 
-If the application requires high log entry output performance, it may be a good choice to use the `santa.StringMessage` log message structure as the log message value of the log message output API provided by the standard logger. Under normal circumstances, the structured logger is also very fast, but requires some coding overhead for the structured fields.
+```go
+// Create a default template logger instance.
+logger, _ := santa.NewStandard()
 
-It is worth noting that if your application needs to customize the log message structure, the customized log message structure also needs to implement the formatter interface of the corresponding encoder, otherwise the encoder does not know how to format the custom log message structure. Among them, the formatter interface of the standard encoder is `santa.StandardFormatter`, and the format interface of the JSON encoder is `santa.JSONFormatter`.
+// The created logger instance must be explicitly closed.
+defer logger.Close()
 
-Similarly, your application can also customize one or more encoders, as long as these encoders have implemented the `santa.Encoder` interface. If the encoder needs to support multiple log message structures, you need to define a formatter interface and let all supported log message structures implement it.
+// Print out a string log entry to standard output.
+logger.Info(santa.StringMessage("Internal server error."))
+```
+
+The following shows the actual output string log entries:
+
+```text
+2020-10-10T19:17:41.7185663+08:00 main.go:17 no-labels [INFO] "Internal server error."
+```
+
+### Outputting
+Normally, the logger will output the log entries of `DEBUG`, `INFO` and `WARNING` levels to the standard output device (`os.Stdout`), and output the log entries of `ERROR` and `FATAL` levels to The standard error device (`os.Stderr`), which is controlled by the default value of the option.
+
+Santa uses a synchronizer to output the log entries encoded by the encoder to a specific storage device (for example: local hard disk). Currently, the following types of synchronizers are provided:
+
+- Standard Synchronizer
+- File Synchronizer
+- Network Synchronizer
+- Discard Synchronizer
+
+Among them, the standard synchronizer allows any structure that has implemented the ʻio.Writer` interface to be used as a specific storage device. For details, please refer to the comment section of the `StandardSyncer` structure.
+
+#### Local File
+The first thing to show you is how to use the file synchronizer to output log entries to a file located on the local hard disk:
+
+```go
+// Create an option instance with default option values.
+option := santa.NewStructOption()
+
+// Change the synchronizer type to `SyncerFile`.
+option.Outputting.UseFile("./testing.log")
+option.ErrorOutputting.UseFile("./testing_error.log")
+
+// Use custom options to build a structured logger instance.
+logger, _ := option.Build()
+```
+
+#### Network
+The next thing I want to show you is how to use the network synchronizer to output log entries to TCP/IP or Unix Domain Socket streams:
+
+```go
+// Create an option instance with default option values.
+option := santa.NewStructOption()
+
+// Change the synchronizer type to `SyncerNetwork`.
+option.Outputting.UseNetwork(santa.ProtocolTCP, "127.0.0.1:5000")
+option.ErrorOutputting.UseNetwork(santa.ProtocolTCP, "127.0.0.1:5000")
+// Optional: option.Outputting.UseNetwork(santa.ProtocolUnix, "/var/run/santa.sock")
+// Optional: option.ErrorOutputting.UseNetwork(santa.ProtocolUnix, "/var/run/santa.sock")
+
+// Use custom options to build a structured logger instance.
+logger, _ := option.Build()
+```
+
+#### Discard
+The last thing to show you is how to use the discard synchronizer to output log entries to the black hole:
+
+```go
+// Create an option instance with default option values.
+option := santa.NewStructOption()
+
+// Change the synchronizer type to `SyncerDiscard`.
+option.Outputting.UseDiscard()
+option.ErrorOutputting.UseDiscard()
+
+// Use custom options to build a structured logger instance.
+logger, _ := option.Build()
+```
+
+As the name implies, the discard synchronizer discards all output log entries, and no log entries are written to any specific storage device.
 
 ### Others
-Santa’s design focuses on scalability, and performance is second. This means that many of Santa’s functions can be easily customized, including but not limited to loggers, log messages, samplers, encoders, and synchronizers. For details, please refer to the comment section of each function in the Santa source code.
+The logger also has many customizable options, including but not limited to: samplers, hooks, encoders, etc. For details, please refer to the comment section of the `StandardOption` structure.
 
 ## Performance
-It is worth noting that Santa focuses on scalability when designing, performance is secondary, but performance is still concerned.
+Santa provides efficient loggers and APIs, and uses many features to improve API performance, which means your application will not waste a lot of CPU time on printing out log entries. However, Santa pays more attention to the ease of use and extensible API, which requires the use of runtime features and maintaining some state, which requires some CPU time overhead.
 
-Santa strives to be closer to the actual production environment in the benchmark performance test process, because the performance in the production environment is more meaningful.
+I believe that every logging package has its value and advantages, so I will not compare Santa with other logging packages for the time being. The following data shows the Benchmark situation of the laboratory environment, for reference only, it is recommended that you evaluate the actual performance before releasing the application to the production environment.
 
-The benchmark performance test was conducted on a VM instance, which is equipped with a 4-core AMD EPYC™ ROME processor and 16 GB of DDR4 memory. The processor clocked at 2.6GHz and adopts AMD64 architecture. The benchmark performance test is performed by the benchmark program running on the VM instance using all processor cores, and the benchmark program uses the Golang 1.15 runtime.
+It is worth noting that Benchmark was performed on a virtual machine instance in a laboratory environment. The following table shows the specifications of the virtual machine instance:
 
-The benchmark program of each test item will be run 10 times, and the final result of each indicator is the minimum value of all benchmark samples of the indicator. The test method is as follows:
+| Component | Parameters |
+| :-------- | :--------- |
+| Processor | AMD EPYC™ ROME, 4 Cores, 2.6GHz, AMD64 |
+| Memory | 16 GBytes, DDR4 |
+| Hard Disk | 1 TBytes, NVMe, SSD |
+| System | CentOS 8.0, AMD64 |
+| Runtime | Golang 1.15, AMD64 |
+
+Each Benchmark will run 10 times and take the smallest value among all samples.
 
 ### Structured Logger
-For the structured logger, the benchmark program uses the `santa.NewStructBenchmark` function to build an instance of the structured logger for benchmark testing.
+The first thing to show you is the Benchmark data of the structured logger. Benchmark uses the `santa.NewStructBenchmark` function to create a structured logger instance for testing, and then uses the `santa.(*StructLogger).Infos` function to print out structured log entries.
 
-The benchmark program will continuously call the `santa.(*StructLogger).Infos` function to print out different log messages, each of which contains a different description text and 10 fields (including 5 complex fields). The benchmark test results are as follows:
+#### Complex Nested Fields
+The following table shows the performance when using the API provided by the structured logger to output a structured log containing 10 complex fields:
 
 | Encoder | Sampling | Time | Objects Allocated |
-| :------ | :------: | :----------: | :---------------: |
+| :------ | :------: | :--: | :---------------: |
 | JSON | True | 241 ns/op | 7 allocs/op |
 | JSON | False | 681 ns/op | 7 allocs/op |
 | Standard | True | 245 ns/op | 7 allocs/op |
 | Standard | False | 749 ns/op | 7 allocs/op |
 
-The benchmark program uses multiple complex fields (including but not limited to: nested objects, arrays, etc.) that are not allocated in advance each time a structured logger is used to output log entries, which will result in multiple object allocations.
-
-If only 2 non-complex fields are printed out:
+#### Simple Fields
+The following table shows the performance of using the API provided by the structured logger to output a structured log containing 2 simple fields:
 
 | Encoder | Sampling | Time | Objects Allocated |
-| :------ | :------: | :----------: | :---------------: |
+| :------ | :------: | :--: | :---------------: |
 | JSON | True | 88.8 ns/op | 1 allocs/op |
 | JSON | False | 102 ns/op | 1 allocs/op |
 
-Normally, the production environment uses files on the local hard disk to store log entry data. The following benchmark performance test uses the file synchronizer and only prints 2 non-complex fields (note: the local hard disk uses SSD, the actual performance varies by hard disk performance):
+#### Local File
+The following table shows the performance when using the API provided by the structured logger to output a structured log containing 2 simple fields to a local file:
 
 | Encoder | Sampling | Time | Objects Allocated |
-| :------ | :------: | :----------: | :---------------: |
+| :------ | :------: | :--: | :---------------: |
 | JSON | True | 89.7 ns/op | 1 allocs/op |
 | JSON | False | 453 ns/op | 1 allocs/op |
 
-### Template Logger
-For the template logger, the benchmark program uses the `santa.NewTemplateBenchmark` function to build an instance of the template logger for benchmark testing.
+Please note that the local hard disk may be a performance bottleneck, and the actual performance is affected by the performance of the local hard disk.
 
-The benchmark program will continuously call the `santa.(*TemplateLogger).Infof` function to print out different log messages, including a different template string and 10 commonly used template parameters. The benchmark test results are as follows:
+### Template Logger
+The next thing to show you is the Benchmark data of the template logger. Benchmark uses the `santa.NewTemplateBenchmark` function to create a template logger instance for testing, and then uses the `santa.(*TemplateLogger).Infos` function to print out template log entries.
+
+The following table shows the performance of using the API provided by the template logger to output a structured log containing parameters of 10 commonly used data types:
 
 | Encoder | Sampling | Time | Objects Allocated |
-| :------ | :------: | :----------: | :---------------: |
+| :------ | :------: | :--: | :---------------: |
 | JSON | True | 82.6 ns/op | 1 allocs/op |
 | JSON | False | 375 ns/op | 2 allocs/op |
 | Standard | True | 84.5 ns/op | 1 allocs/op |
 | Standard | False | 448 ns/op | 2 allocs/op |
 
 ### Standard Logger
-For the standard logger, the benchmark program uses `santa.NewStandardBenchmark` to build an instance of the standard logger for benchmark testing.
+The last thing I want to show you is the Benchmark data of the standard logger. Benchmark uses the `santa.NewStandardBenchmark` function to create a standard logger instance for testing, and then uses the `santa.(*StandardLogger).Infos` function to print out string log entries (`santa.StringMessage`).
 
-The benchmark program will continuously call the `santa.(*StandardLogger).Info` function to print out different `santa.StringMessage` log messages. The benchmark test results are as follows:
+The following table shows the performance when using the API provided by the standard logger to output pure string logs:
 
 | Encoder | Sampling | Time | Objects Allocated |
-| :------ | :------: | :----------: | :---------------: |
+| :------ | :------: | ---: | :---------------: |
 | JSON | True | 32.2 ns/op | 0 allocs/op |
 | JSON | False | 51.4 ns/op | 0 allocs/op |
 | Standard | True | 35.8 ns/op | 0 allocs/op |
 | Standard | False | 118 ns/op | 0 allocs/op |
 
-As can be seen from the benchmark performance test results listed above, the time consumed for each API call when using the standard encoder is increased compared to the JSON encoder. This is because the standard encoder uses `time.RFCRFC3339Nano` as the time formatting layout style by default, which will result in the need for time string formatting.
+### Other
+The standard encoder uses `time.RFC3339Nano` as the layout style of the timestamp by default, which means that additional time string formatting is required, causing additional CPU time and heap memory allocation overhead.
 
 ## Development Status: Alpha
-Santa is currently under internal development and testing, which means that all APIs provided for applications are unstable. These APIs may contain errors and API signatures and implementations may be modified in future versions. Unless necessary, it is not recommended to use Santa for production applications immediately to avoid accidents.
+At present, the preliminary development work has been basically completed, but some functions still need to be further tested and verified. When there is enough telemetry data to prove the stability of these functions, I will release the Beta version. It is worth noting that the API provided by the Alpha version may have errors, and one or more APIs may be changed or removed in the future. 
+
+It is recommended that you only use the Alpha version in a test environment to avoid accidents.
 
 ## Contribute
-Everyone is welcome to become a Santa contributor, please refer to the contribution guidelines and code of conduct. If you encounter a problem while using Santa, please don’t hesitate to create a new issue on the issue tracker, and Santa’s maintainer will confirm it and help resolve it as soon as possible.
-
-## Precautions
-- The benchmark performance test is carried out by simulating a common production environment in a specific experimental environment. The actual performance may change due to different environments, so the data is for reference only.
-- The benchmark performance test may not be updated with the iteration of the Santa package version, so the performance test data does not represent the performance of the latest version of Santa, and the data is for reference only.
+I welcome contributions from any developers interested in Santa, but there is no detailed contribution guide for the time being. If you encounter a problem during use, please feel free to open a new issue on the issue tracker.
 
 <hr>
 
