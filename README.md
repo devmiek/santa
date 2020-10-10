@@ -87,15 +87,14 @@ defer logger.Close()
 
 // Print out a template log entry to standard output.
 logger.Infof("Status: %d, Message: %s, Request ID: %s",
-    500, "Internal server error.",
-    "d4b02c71-7ca0-46c3-b18c-9e79f55df3c9",
-)
+    500, "Internal server error.", "d4b02c71-7ca0-46c3-b18c-9e79f55df3c9")
 ```
 
 The following shows the actual output template log entries:
 
 ```text
-2020-10-10T18:41:04.5541337+08:00 main.go:17 no-labels [INFO] "Status: 500, Message: Internal server error., Request ID: d4b02c71-7ca0-46c3-b18c-9e79f55df3c9"
+2020-10-10T18:41:04.5541337+08:00 main.go:17 no-labels [INFO] "Status: 500,
+Message: Internal server error., Request ID: d4b02c71-7ca0-46c3-b18c-9e79f55df3c9"
 ```
 
 It is worth noting that the `NewTemplate` function will create a template logger instance with the default option values. Among them, the default log entry encoder is `EncoderStandard`. If you need a template logger to output structured log entries, you should use the `EncoderJSON` encoder. The following example shows how to create a template logger instance using the JSON encoder:
