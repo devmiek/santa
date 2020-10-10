@@ -113,11 +113,9 @@ func (m StructMessage) SerializeStandard(buffer []byte) []byte {
 func (m StructMessage) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, `{"text": "`...)
 	buffer = append(buffer, m.Text...)
-	
 	if len(m.Fields) == 0 {
 		return append(buffer, `"}`...)
 	}
-
 	buffer = append(buffer, `", "fields": `...)
 	buffer = m.Fields.SerializeJSON(buffer)
 	return append(buffer, '}')

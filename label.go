@@ -80,14 +80,12 @@ type Labels []Label
 func (l Labels) SerializeJSON(buffer []byte) []byte {
 	buffer = append(buffer, '{')
 	tail := len(l) - 1
-
 	for index := 0; index < len(l); index++ {
 		buffer = l[index].SerializeJSON(buffer)
 		if index != tail {
 			buffer = append(buffer, ", "...)
 		}
 	}
-
 	return append(buffer, '}')
 }
 

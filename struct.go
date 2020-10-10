@@ -68,7 +68,6 @@ func (l *StructLogger) Prints(level Level, text string, fields ...Field) error {
 	message := pool.message.structure.New(text, fields)
 	err := l.output(level, message)
 	pool.message.structure.Free(message)
-
 	return err
 }
 
@@ -79,7 +78,6 @@ func (l *StructLogger) Debugs(text string, fields ...Field) error {
 	message := pool.message.structure.New(text, fields)
 	err := l.output(LevelDebug, message)
 	pool.message.structure.Free(message)
-
 	return err
 }
 
@@ -90,7 +88,6 @@ func (l *StructLogger) Infos(text string, fields ...Field) error {
 	message := pool.message.structure.New(text, fields)
 	err := l.output(LevelInfo, message)
 	pool.message.structure.Free(message)
-	
 	return err
 }
 
@@ -101,7 +98,6 @@ func (l *StructLogger) Warnings(text string, fields ...Field) error {
 	message := pool.message.structure.New(text, fields)
 	err := l.output(LevelWarning, message)
 	pool.message.structure.Free(message)
-	
 	return err
 }
 
@@ -112,7 +108,6 @@ func (l *StructLogger) Errors(text string, fields ...Field) error {
 	message := pool.message.structure.New(text, fields)
 	err := l.output(LevelError, message)
 	pool.message.structure.Free(message)
-	
 	return err
 }
 
@@ -123,7 +118,6 @@ func (l *StructLogger) Fatals(text string, fields ...Field) error {
 	message := pool.message.structure.New(text, fields)
 	err := l.output(LevelFatal, message)
 	pool.message.structure.Free(message)
-	
 	return err
 }
 
@@ -138,7 +132,6 @@ func (l *StructLogger) Duplicate() *StructLogger {
 		// may cause panic.
 		return nil
 	}
-
 	instance := *l
 	return &instance
 }
@@ -249,11 +242,9 @@ func (o *StructOption) DisableFlushing() *StructOption {
 // Build builds and returns a structured logger instance.
 func (o *StructOption) Build() (*StructLogger, error) {
 	logger, err := o.StandardOption.Build()
-
 	if err != nil {
 		return nil, err
 	}
-
 	return &StructLogger {
 		StandardLogger: *logger,
 	}, nil
@@ -279,7 +270,6 @@ func NewStruct() (*StructLogger, error) {
 // suitable for benchmark performance testing and any errors encountered.
 func NewStructBenchmark(sampling bool, encoder string) (*StructLogger, error) {
 	option := NewStructOption()
-
 	switch encoder {
 	case EncoderStandard:
 		option.Encoding.UseStandard()
@@ -288,17 +278,13 @@ func NewStructBenchmark(sampling bool, encoder string) (*StructLogger, error) {
 	default:
 		return nil, ErrInvalidType
 	}
-
 	option.Encoding.DisableSourceLocation = true
 	option.Flushing.Interval = 0
-	
 	option.Outputting.UseDiscard()
 	option.ErrorOutputting.UseDiscard()
 	option.UseLevel(LevelDebug)
-
 	if !sampling {
 		option.DisableSampling()
 	}
-
 	return option.Build()
 }

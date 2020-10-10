@@ -55,14 +55,11 @@ func (s EntrySourceLocation) AppendString(buffer []byte) []byte {
 	if buffer == nil {
 		return nil
 	}
-
 	if !s.Parsed {
 		return append(buffer, "???:0"...)
 	}
-
 	buffer = append(buffer, filepath.Base(s.File)...)
 	buffer = append(buffer, ':')
-
 	return strconv.AppendInt(buffer, int64(s.Line), 10)
 }
 
@@ -73,18 +70,15 @@ func (s EntrySourceLocation) SerializeJSON(buffer []byte) []byte {
 	if buffer == nil {
 		return nil
 	}
-
 	if !s.Parsed {
 		return append(buffer, "null"...)
 	}
-
 	buffer = append(buffer, "{\"file\": \""...)
 	buffer = append(buffer, filepath.Base(s.File)...)
 	buffer = append(buffer, "\", \"line\": "...)
 	buffer = strconv.AppendInt(buffer, int64(s.Line), 10)
 	buffer = append(buffer, ", \"function\": \""...)
 	buffer = append(buffer, runtime.FuncForPC(s.Proc).Name()...)
-
 	return append(buffer, "\"}"...)
 }
 

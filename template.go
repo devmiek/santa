@@ -66,7 +66,6 @@ func (l *TemplateLogger) Printf(level Level, template string, args ...interface 
 	message := pool.message.template.New(template, args)
 	err := l.output(level, message)
 	pool.message.template.Free(message)
-
 	return err
 }
 
@@ -77,7 +76,6 @@ func (l *TemplateLogger) Debugf(template string, args ...interface { }) error {
 	message := pool.message.template.New(template, args)
 	err := l.output(LevelDebug, message)
 	pool.message.template.Free(message)
-
 	return err
 }
 
@@ -88,7 +86,6 @@ func (l *TemplateLogger) Infof(template string, args ...interface { }) error {
 	message := pool.message.template.New(template, args)
 	err := l.output(LevelInfo, message)
 	pool.message.template.Free(message)
-
 	return err
 }
 
@@ -99,7 +96,6 @@ func (l *TemplateLogger) Warningf(template string, args ...interface { }) error 
 	message := pool.message.template.New(template, args)
 	err := l.output(LevelWarning, message)
 	pool.message.template.Free(message)
-
 	return err
 }
 
@@ -110,7 +106,6 @@ func (l *TemplateLogger) Errorf(template string, args ...interface { }) error {
 	message := pool.message.template.New(template, args)
 	err := l.output(LevelError, message)
 	pool.message.template.Free(message)
-
 	return err
 }
 
@@ -121,7 +116,6 @@ func (l *TemplateLogger) Fatalf(template string, args ...interface { }) error {
 	message := pool.message.template.New(template, args)
 	err := l.output(LevelFatal, message)
 	pool.message.template.Free(message)
-
 	return err
 }
 
@@ -136,7 +130,6 @@ func (l *TemplateLogger) Duplicate() *TemplateLogger {
 		// may cause panic.
 		return nil
 	}
-
 	instance := *l
 	return &instance
 }
@@ -247,11 +240,9 @@ func (o *TemplateOption) DisableFlushing() *TemplateOption {
 // Build builds and returns a template logger instance.
 func (o *TemplateOption) Build() (*TemplateLogger, error) {
 	logger, err := o.StandardOption.Build()
-
 	if err != nil {
 		return nil, err
 	}
-
 	return &TemplateLogger {
 		StandardLogger: *logger,
 	}, nil
@@ -275,7 +266,6 @@ func NewTemplate() (*TemplateLogger, error) {
 // suitable for benchmark performance testing and any errors encountered.
 func NewTemplateBenchmark(sampling bool, encoder string) (*TemplateLogger, error) {
 	option := NewTemplateOption()
-
 	switch encoder {
 	case EncoderStandard:
 		option.Encoding.UseStandard()
@@ -284,17 +274,13 @@ func NewTemplateBenchmark(sampling bool, encoder string) (*TemplateLogger, error
 	default:
 		return nil, ErrInvalidType
 	}
-
 	option.Encoding.DisableSourceLocation = true
 	option.Flushing.Interval = 0
-	
 	option.Outputting.UseDiscard()
 	option.ErrorOutputting.UseDiscard()
 	option.UseLevel(LevelDebug)
-
 	if !sampling {
 		option.DisableSampling()
 	}
-
 	return option.Build()
 }

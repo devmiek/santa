@@ -61,7 +61,6 @@ func NewSimpleHook(handler SimpleHookHandler) *SimpleHook {
 	if handler == nil {
 		return nil
 	}
-
 	return &SimpleHook {
 		handler: handler,
 	}

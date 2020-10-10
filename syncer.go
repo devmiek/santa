@@ -140,25 +140,19 @@ type StandardSyncer struct {
 func (s *StandardSyncer) flush() (int, error) {
 	suspended := s.mutex != nil && s.mutex.Suspend()
 	size, err := s.writer.Write(s.buffer)
-
 	if err != nil {
 		if size > 0 {
 			s.buffer = append(s.buffer[ : 0], s.buffer[size : ]...)
 		}
-
 		if suspended {
 			s.mutex.Resume()
 		}
-
 		return size, err
 	}
-
 	s.buffer = s.buffer[ : 0]
-
 	if suspended {
 		s.mutex.Resume()
 	}
-
 	return size, nil
 }
 
@@ -173,45 +167,33 @@ func (s *StandardSyncer) Write(buffer []byte) (int, error) {
 	if s.mutex != nil {
 		s.mutex.Lock()
 	}
-
 	if s.buffer != nil {
 		size := len(s.buffer) + len(buffer)
-
 		if size >= s.capacity {
 			_, err := s.flush()
-
 			if err != nil {
 				if s.mutex != nil {
 					s.mutex.Unlock()
 				}
-
 				return 0, err
 			}
-
 			size = len(buffer)
 		}
-
 		if size < s.capacity {
 			s.buffer = append(s.buffer, buffer...)
-
 			if s.mutex != nil {
 				s.mutex.Unlock()
 			}
-
 			return len(buffer), nil
 		}
 	}
-
 	if s.mutex != nil {
 		s.mutex.Suspend()
 	}
-
 	size, err := s.writer.Write(buffer)
-
 	if s.mutex != nil {
 		s.mutex.UnlockAndResume()
 	}
-
 	return size, err
 }
 
@@ -224,35 +206,26 @@ func (s *StandardSyncer) Sync() error {
 	if s.mutex != nil {
 		s.mutex.LockAndSuspend()
 	}
-
 	if len(s.buffer) > 0 {
 		_, err := s.flush()
-
 		if err != nil {
 			if s.mutex != nil {
 				s.mutex.UnlockAndResume()
 			}
-
 			return err
 		}
 	}
-
 	handle, ok := s.writer.(*os.File)
-
 	if !ok {
 		if s.mutex != nil {
 			s.mutex.UnlockAndResume()
 		}
-
 		return nil
 	}
-
 	err := handle.Sync()
-
 	if s.mutex != nil {
 		s.mutex.UnlockAndResume()
 	}
-
 	return err
 }
 
@@ -301,7 +274,6 @@ func (o *StandardSyncerOption) UseWriter(writer io.Writer) *StandardSyncerOption
 	if writer == nil {
 		writer = ioutil.Discard
 	}
-
 	o.Writer = writer
 	return o
 }
@@ -310,19 +282,15 @@ func (o *StandardSyncerOption) UseWriter(writer io.Writer) *StandardSyncerOption
 func (o *StandardSyncerOption) Build() (*StandardSyncer, error) {
 	var buffer []byte
 	var mutex *SpinLock
-
 	if !o.DisableMutex {
 		if o.CacheCapacity < 1024 && o.CacheCapacity > 0 {
 			o.CacheCapacity = 1024
 		}
-	
 		if o.CacheCapacity > 0 {
 			buffer = make([]byte, 0, o.CacheCapacity)
 		}
-
 		mutex = NewSpinLock()
 	}
-
 	return &StandardSyncer {
 		writer: o.Writer,
 		buffer: buffer,
@@ -397,26 +365,19 @@ func (o *FileSyncerOption) Build() (*FileSyncer, error) {
 	if len(o.FileName) == 0 {
 		o.FileName = os.DevNull
 	}
-
 	handle, err := os.OpenFile(o.FileName, os.O_RDWR |
 		os.O_CREATE | os.O_APPEND, 0666)
-
 	if err != nil {
 		return nil, err
 	}
-
 	option := NewStandardSyncerOption()
-
 	option.SyncerOption = o.SyncerOption
 	option.Writer = handle
-	
 	syncer, err := option.Build()
-
 	if err != nil {
 		handle.Close()
 		return nil, err
 	}
-
 	return &FileSyncer {
 		StandardSyncer: syncer,
 	}, nil
@@ -460,14 +421,11 @@ type NetworkSyncer struct {
 
 func (s *NetworkSyncer) reconnect() {
 	defer s.contextWaitGroup.Done()
-
 	dialer := &net.Dialer {
 		Timeout: time.Second * 5,
 	}
-
 	for {
 		connect, err := dialer.DialContext(s.context, s.protocol, s.address)
-
 		if err != nil {
 			// If the synchronizer is closing, give up the reconnection
 			// and return. To avoid calling the function again, the value
@@ -484,14 +442,11 @@ func (s *NetworkSyncer) reconnect() {
 			case <-s.context.Done():
 				return
 			}
-			
 		}
-
 		s.writer.(net.Conn).Close()
 		s.writer = connect
 		break
 	}
-
 	atomic.CompareAndSwapInt32(&s.disconnected, 1, 0)
 }
 
@@ -504,7 +459,6 @@ func (s *NetworkSyncer) reconnect() {
 // errors encountered.
 func (s *NetworkSyncer) Write(buffer []byte) (int, error) {
 	size, err := s.StandardSyncer.Write(buffer)
-
 	if err != nil {
 		if strings.Contains(err.Error(), "use of closed network connection") {
 			// The connection to the other end of the network may have
@@ -516,7 +470,6 @@ func (s *NetworkSyncer) Write(buffer []byte) (int, error) {
 			}
 		}
 	}
-
 	return size, err
 }
 
@@ -610,26 +563,19 @@ func (o *NetworkSyncerOption) Build() (*NetworkSyncer, error) {
 	}
 
 	connect, err := net.Dial(o.Protocol, o.Address)
-	
 	if err != nil {
 		return nil, err
 	}
-
 	option := NewStandardSyncerOption()
-
 	option.SyncerOption = o.SyncerOption
 	option.Writer = connect
-	
 	syncer, err := option.Build()
-
 	if err != nil {
 		connect.Close()
 		return nil, err
 	}
-
 	context, contextCancel := context.WithCancel(
 		context.Background())
-
 	return &NetworkSyncer {
 		StandardSyncer: syncer,
 
@@ -670,13 +616,10 @@ func NewDiscardSyncer() (*DiscardSyncer, error) {
 	option := NewStandardSyncerOption()
 	option.Writer = ioutil.Discard
 	option.DisableMutex = true
-
 	syncer, err := option.Build()
-
 	if err != nil {
 		return nil, err
 	}
-
 	return &DiscardSyncer {
 		StandardSyncer: syncer,
 	}, nil

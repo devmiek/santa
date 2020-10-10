@@ -95,12 +95,10 @@ type TextSampleParser interface {
 // of the given text.
 func (*TextSampler) hash64(text string) uint64 {
 	result := uint64(14695981039346656037)
-
 	for index := 0; index < len(text); index++ {
 		result ^= uint64(text[index])
 		result *= 1099511628211
 	}
-
 	return result
 }
 
@@ -110,9 +108,7 @@ func (s *TextSampler) Sample(entry *Entry) bool {
 	if !s.span.Contains(entry.Level) {
 		return true
 	}
-
 	parser, ok := entry.Message.(TextSampleParser)
-
 	if !ok {
 		return true
 	}
@@ -210,7 +206,6 @@ func (o *TextSamplerOption) UseSpan(start, end Level) *TextSamplerOption {
 		Start: start,
 		End: end,
 	}
-
 	return o
 }
 

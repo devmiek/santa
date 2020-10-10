@@ -77,13 +77,11 @@ func (l *Logger) output(level Level, message Message) error {
 	if !l.level.Enabled(level) {
 		return nil
 	}
-
 	if len(l.exporters) == 0 {
 		return nil
 	}
 
 	entry := pool.entry.New()
-
 	entry.Name = l.name
 	entry.Level = level
 	entry.Time = time.Now()
@@ -94,7 +92,6 @@ func (l *Logger) output(level Level, message Message) error {
 		pool.entry.Free(entry)
 		return nil
 	}
-	
 	if l.addSource {
 		entry.SourceLocation = newEntrySourceLocation(
 			runtime.Caller(2))
@@ -108,7 +105,6 @@ func (l *Logger) output(level Level, message Message) error {
 			return err
 		}
 	}
-
 	for index := 0; index < len(l.exporters); index++ {
 		err := l.exporters[index].Export(entry)
 
@@ -319,7 +315,6 @@ func (l *StandardLogger) Duplicate() *StandardLogger {
 		// may cause panic.
 		return nil
 	}
-
 	instance := *l
 	return &instance
 }
@@ -396,7 +391,6 @@ func (l *StandardLogger) Sync() error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -413,7 +407,6 @@ func (l *StandardLogger) Sync() error {
 // best practice is to exit the application.
 func (l *StandardLogger) Close() error {
 	references := atomic.AddInt32(l.contextReferences, -1)
-
 	switch {
 	case references > 0:
 		// The other logger copy is using the logger and cannot be closed
@@ -435,7 +428,6 @@ func (l *StandardLogger) Close() error {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -449,9 +441,7 @@ func (l *StandardLogger) flushHandler(interval time.Duration) {
 		// The interval must not be less than 100 milliseconds.
 		interval = (time.Microsecond * 100)
 	}
-
 	defer l.contextWaitGroup.Done()
-
 	for {
 		select {
 		case <-l.context.Done():
@@ -507,11 +497,9 @@ func (o *SamplingOption) UseText() *SamplingOption {
 // SamplerText constant. Then return to the option instance itself.
 func (o *SamplingOption) UseTextOption(option *TextSamplerOption) *SamplingOption {
 	o.Type = SamplerText
-
 	if option == nil {
 		option = NewTextSamplerOption()
 	}
-
 	o.Option = option
 	return o
 }
@@ -521,7 +509,6 @@ func (o *SamplingOption) Build() (Sampler, error) {
 	if len(o.Type) == 0 {
 		return nil, nil
 	}
-
 	switch o.Type {
 	case SamplerText:
 		return o.Option.(*TextSamplerOption).Build()
@@ -595,11 +582,9 @@ func (o *EncodingOption) UseStandard() *EncodingOption {
 // option instance
 func (o *EncodingOption) UseStandardOption(option *StandardEncoderOption) *EncodingOption {
 	o.Type = EncoderStandard
-
 	if option == nil {
 		option = NewStandardEncoderOption()
 	}
-
 	o.Option = option
 	return o
 }
@@ -622,11 +607,9 @@ func (o *EncodingOption) UseJSON() *EncodingOption {
 // instance itself.
 func (o *EncodingOption) UseJSONOption(option *JSONEncoderOption) *EncodingOption {
 	o.Type = EncoderJSON
-
 	if option == nil {
 		option = NewJSONEncoderOption()
 	}
-
 	o.Option = option
 	return o
 }
@@ -751,19 +734,16 @@ func (o *OutputtingOption) Build() (Syncer, error) {
 		if o.DisableCache {
 			o.Option.(*StandardSyncerOption).UseCacheCapacity(0)
 		}
-		
 		return o.Option.(*StandardSyncerOption).Build()
 	case SyncerFile:
 		if o.DisableCache {
 			o.Option.(*FileSyncerOption).UseCacheCapacity(0)
 		}
-
 		return o.Option.(*FileSyncerOption).Build()
 	case SyncerNetwork:
 		if o.DisableCache {
 			o.Option.(*NetworkSyncerOption).UseCacheCapacity(0)
 		}
-		
 		return o.Option.(*NetworkSyncerOption).Build()
 	case SyncerDiscard:
 		return NewDiscardSyncer()
@@ -1000,45 +980,34 @@ func (o *StandardOption) DisableFlushing() *StandardOption {
 // Build builds and returns a standard logger instance.
 func (o *StandardOption) Build() (*StandardLogger, error) {
 	sampler, err := o.Sampling.Build()
-
 	if err != nil {
 		return nil, err
 	}
-
 	encoder, err := o.Encoding.Build()
-
 	if err != nil {
 		return nil, err
 	}
-
 	syncer, err := o.Outputting.Build()
-
 	if err != nil {
 		return nil, err
 	}
-
 	exporter, err := NewStandardExporterOption().
 		UseSpan(LevelDebug, LevelWarning).
 		UseEncoder(encoder).
 		UseSyncer(syncer).Build()
-
 	if err != nil {
 		syncer.Close()
 		return nil, err
 	}
-
 	errorSyncer, err := o.ErrorOutputting.Build()
-
 	if err != nil {
 		exporter.Close()
 		return nil, err
 	}
-
 	errorExporter, err := NewStandardExporterOption().
 		UseSpan(LevelError, LevelFatal).
 		UseEncoder(encoder).
 		UseSyncer(errorSyncer).Build()
-
 	if err != nil {
 		exporter.Close()
 		errorSyncer.Close()
@@ -1067,7 +1036,6 @@ func (o *StandardOption) Build() (*StandardLogger, error) {
 
 	context, contextCancel := context.WithCancel(
 		context.Background())
-
 	instance := &StandardLogger {
 		Logger: *logger,
 
@@ -1085,7 +1053,6 @@ func (o *StandardOption) Build() (*StandardLogger, error) {
 		instance.contextWaitGroup.Add(1)
 		go instance.flushHandler(o.Flushing.Interval)
 	}
-
 	return instance, nil
 }
 
@@ -1113,7 +1080,6 @@ func NewStandard() (*StandardLogger, error) {
 // encountered.
 func NewStandardBenchmark(sampling bool, encoder string) (*StandardLogger, error) {
 	option := NewStandardOption()
-
 	switch encoder {
 	case EncoderStandard:
 		option.Encoding.UseStandard()
@@ -1122,17 +1088,13 @@ func NewStandardBenchmark(sampling bool, encoder string) (*StandardLogger, error
 	default:
 		return nil, ErrInvalidType
 	}
-
 	option.Encoding.DisableSourceLocation = true
 	option.Flushing.Interval = 0
-	
 	option.Outputting.UseDiscard()
 	option.ErrorOutputting.UseDiscard()
 	option.UseLevel(LevelDebug)
-
 	if !sampling {
 		option.DisableSampling()
 	}
-
 	return option.Build()
 }

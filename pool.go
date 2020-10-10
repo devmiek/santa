@@ -41,7 +41,6 @@ func (p *StructMessagePool) New(text string, fields []Field) *StructMessage {
 	message := p.pool.Get().(*StructMessage)
 	message.Text = text
 	message.Fields = fields
-
 	return message
 }
 
@@ -81,7 +80,6 @@ func (p *TemplateMessagePool) New(template string, args []interface { }) *Templa
 	message := p.pool.Get().(*TemplateMessage)
 	message.Template = template
 	message.Args = args
-
 	return message
 }
 

@@ -89,7 +89,6 @@ func (l *SpinLock) Lock() {
 		// coroutine will be interrupted for 10 milliseconds to avoid
 		// taking up more CPU time. This is to alleviate the side effects
 		// of accidentally holding lock ownership for a long time.
-
 		if count >= 10000 {
 			time.Sleep(time.Millisecond * 10)
 		}
@@ -122,7 +121,6 @@ func (l *SpinLock) LockAndSuspend() {
 		// coroutine will be interrupted for 10 milliseconds to avoid
 		// taking up more CPU time. This is to alleviate the side effects
 		// of accidentally holding lock ownership for a long time.
-
 		if count >= 10000 {
 			time.Sleep(time.Millisecond * 10)
 		}
@@ -166,11 +164,9 @@ func (l *SpinLock) Suspend() bool {
 // better choice.
 func (l *SpinLock) Resume() {
 	l.condition.L.Lock()
-
 	if atomic.CompareAndSwapInt32(&l.status, 2, 1) {
 		l.condition.Broadcast()
 	}
-
 	l.condition.L.Unlock()
 }
 

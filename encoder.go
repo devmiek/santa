@@ -192,15 +192,12 @@ func (e *StandardEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 		} else {
 			buffer = entry.Time.AppendFormat(buffer, e.layout)
 		}
-
 		buffer = append(buffer, ' ')
 	}
-
 	if e.option.EncodeSourceLocation {
 		buffer = entry.SourceLocation.AppendString(buffer)
 		buffer = append(buffer, ' ')
 	}
-
 	if e.option.EncodeLabels {
 		if entry.Labels.Count() == 0 {
 			buffer = append(buffer, "no-labels "...)
@@ -209,18 +206,15 @@ func (e *StandardEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 			buffer = append(buffer, ' ')
 		}
 	}
-
 	if e.option.EncodeName && len(entry.Name) > 0 {
 		buffer = append(buffer, entry.Name...)
 		buffer = append(buffer, ' ')
 	}
-
 	if e.option.EncodeLevel {
 		buffer = append(buffer, '[')
 		buffer = append(buffer, entry.Level.Format()...)
 		buffer = append(buffer, "] "...)
 	}
-
 	switch message := entry.Message.(type) {
 	case nil:
 		buffer = append(buffer, "null"...)
@@ -229,7 +223,6 @@ func (e *StandardEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 	default:
 		return nil, ErrUnsupportedMessage
 	}
-
 	return append(buffer, '\n'), nil
 }
 
@@ -328,13 +321,10 @@ type JSONEncoder struct {
 // the appended buffer slice.
 func (e *JSONEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 	message, ok := entry.Message.(JSONSerializer)
-
 	if !ok {
 		return nil, ErrUnsupportedMessage
 	}
-
 	buffer = append(buffer, '{')
-
 	if e.option.EncodeTime {
 		buffer = append(buffer, '"')
 		buffer = append(buffer, e.keys.TimeKey...)
@@ -349,7 +339,6 @@ func (e *JSONEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 			buffer = append(buffer, "\", "...)
 		}
 	}
-
 	if e.option.EncodeSourceLocation {
 		buffer = append(buffer, '"')
 		buffer = append(buffer, e.keys.SourceLocationKey...)
@@ -357,7 +346,6 @@ func (e *JSONEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 		buffer = entry.SourceLocation.SerializeJSON(buffer)
 		buffer = append(buffer, ", "...)
 	}
-
 	if e.option.EncodeLabels {
 		buffer = append(buffer, '"')
 		buffer = append(buffer, e.keys.LabelsKey...)
@@ -368,10 +356,8 @@ func (e *JSONEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 		} else {
 			buffer = entry.Labels.SerializeJSON(buffer)
 		}
-
 		buffer = append(buffer, ", "...)
 	}
-
 	if e.option.EncodeName {
 		buffer = append(buffer, '"')
 		buffer = append(buffer, e.keys.NameKey...)
@@ -386,7 +372,6 @@ func (e *JSONEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 			buffer = append(buffer, ", "...)
 		}
 	}
-
 	if e.option.EncodeLevel {
 		buffer = append(buffer, '"')
 		buffer = append(buffer, e.keys.LevelKey...)
@@ -394,12 +379,10 @@ func (e *JSONEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 		buffer = entry.Level.AppendFormat(buffer)
 		buffer = append(buffer, "\", "...)
 	}
-
 	buffer = append(buffer, '"')
 	buffer = append(buffer, e.keys.MessageKey...)
 	buffer = append(buffer, "\": "...)
 	buffer = message.SerializeJSON(buffer)
-
 	return append(buffer, "}\n"...), nil
 }
 

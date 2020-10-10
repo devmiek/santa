@@ -87,32 +87,25 @@ func (e *StandardExporter) Export(entry *Entry) error {
 	if !e.span.Contains(entry.Level) {
 		return nil
 	}
-
 	if e.encoder == nil {
 		return nil
 	}
-
 	pointer := pool.buffer.exporter.New()
 	buffer, err := e.encoder.Encode((*pointer)[ : 0], entry)
-
 	if err != nil {
 		pool.buffer.exporter.Free(pointer)
 		return err
 	}
-
 	if buffer == nil {
 		pool.buffer.exporter.Free(pointer)
 		return nil
 	}
-
 	if e.syncer == nil {
 		pool.buffer.exporter.Free(pointer)
 		return nil
 	}
-
 	_, err = e.syncer.Write(buffer)
 	pool.buffer.exporter.Free(pointer)
-
 	return err
 }
 
@@ -161,7 +154,6 @@ func (o *StandardExporterOption) UseSpan(start, end Level) *StandardExporterOpti
 		Start: start,
 		End: end,
 	}
-
 	return o
 }
 
@@ -199,7 +191,6 @@ func NewStandardExporterOption() *StandardExporterOption {
 	// The error is discarded and usually does not occur.
 	encoder, _ := NewStandardEncoder()
 	syncer, _ := NewDiscardSyncer()
-
 	return &StandardExporterOption {
 		Span: LevelSpan {
 			Start: LevelDebug,
