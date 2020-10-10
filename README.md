@@ -47,7 +47,7 @@ In the above sample code, a structured logger with default options is used to pr
         "function": "main.main"
     },
     "labels": null,
-    "logName": null,
+    "name": null,
     "level": "INFO",
     "message": {
         "text": "Hello Santa!",

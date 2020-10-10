@@ -128,7 +128,7 @@ type EncoderKeys struct {
 	LabelsKey string
 
 	// NameKey represents the name of the key used when encoding the name of
-	// the log entry. If not provided, the default value is "logName".
+	// the log entry. If not provided, the default value is "name".
 	NameKey string
 
 	// LevelKey represents the name of the key used when encoding the level
@@ -148,7 +148,7 @@ func NewEncoderKeys() EncoderKeys {
 		TimeKey: "timestamp",
 		SourceLocationKey: "sourceLocation",
 		LabelsKey: "labels",
-		NameKey: "logName",
+		NameKey: "name",
 		LevelKey: "level",
 		MessageKey: "message",
 	}

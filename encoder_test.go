@@ -103,7 +103,7 @@ func TestJSONEncoderEncode(t *testing.T) {
 		"labels": {
 			"instanceId": "d325ef24327c"
 		},
-		"logName": "test",
+		"name": "test",
 		"level": "INFO",
 		"message": "Hello Test!"
 	}`
