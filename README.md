@@ -153,7 +153,7 @@ Santa uses a synchronizer to output the log entries encoded by the encoder to a 
 - Network Synchronizer
 - Discard Synchronizer
 
-Among them, the standard synchronizer allows any structure that has implemented the ʻio.Writer` interface to be used as a specific storage device. For details, please refer to the comment section of the `StandardSyncer` structure.
+Among them, the standard synchronizer allows any structure that has implemented the `io.Writer` interface to be used as a specific storage device. For details, please refer to the comment section of the `StandardSyncer` structure.
 
 #### Local File
 The first thing to show you is how to use the file synchronizer to output log entries to a file located on the local hard disk:
