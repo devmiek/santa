@@ -272,7 +272,7 @@ The last thing I want to show you is the Benchmark data of the standard logger. 
 The following table shows the performance when using the API provided by the standard logger to output pure string logs:
 
 | Encoder | Sampling | Time | Objects Allocated |
-| :------ | :------: | ---: | :---------------: |
+| :------ | :------: | :--: | :---------------: |
 | JSON | True | 32.2 ns/op | 0 allocs/op |
 | JSON | False | 51.4 ns/op | 0 allocs/op |
 | Standard | True | 35.8 ns/op | 0 allocs/op |
