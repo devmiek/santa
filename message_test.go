@@ -83,7 +83,7 @@ func TestStructMessage(t *testing.T) {
 
 	buffer = message.SerializeStandard(buffer)
 
-	assert.Equal(t, `Hello Test! {"name": "test", "age": 100}`,
+	assert.Equal(t, `"Hello Test!" {"name": "test", "age": 100}`,
 		string(buffer), "Unexpected format result")
 
 	buffer = message.SerializeJSON(buffer[ : 0])

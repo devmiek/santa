@@ -107,8 +107,9 @@ type StructMessage struct {
 // appends it to the given buffer slice, and then returns the appended buffer
 // slice.
 func (m StructMessage) SerializeStandard(buffer []byte) []byte {
+	buffer = append(buffer, '"')
 	buffer = append(buffer, m.Text...)
-	buffer = append(buffer, ' ')
+	buffer = append(buffer, `" `...)
 	return m.Fields.SerializeJSON(buffer)
 }
 
