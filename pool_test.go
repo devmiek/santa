@@ -77,7 +77,7 @@ func TestEntryPool(t *testing.T) {
 }
 
 func TestExporterBufferPool(t *testing.T) {
-	pool := NewExporterBufferPool()
+	pool := NewExporterBufferPool(2048)
 
 	pointer := pool.New()
 

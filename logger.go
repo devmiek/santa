@@ -66,14 +66,18 @@ type Logger struct {
 	addSource bool
 }
 
-// output checks whether the log level is lower than the minimum log
+// Output checks whether the log level is lower than the minimum log
 // level of the logger. If it is higher than or equal to, a log entry
 // of the given log level and message is generated. The generated log
 // entries are then passed to the log entry sampler and one or more log
 // entry hooks for processing, and finally passed to one or more log
 // entry exporters for processing, and any errors encountered are
 // returned.
-func (l *Logger) output(level Level, message Message) error {
+//
+// Please note that this is a low-level API, and the high-level API
+// usually provided by the logger is used internally. Unless necessary,
+// applications should not use this API directly.
+func (l *Logger) Output(stacks int, level Level, message Message) error {
 	if !l.level.Enabled(level) {
 		return nil
 	}
@@ -81,7 +85,7 @@ func (l *Logger) output(level Level, message Message) error {
 		return nil
 	}
 
-	entry := pool.entry.New()
+	entry := pool.Entry.New()
 	entry.Name = l.name
 	entry.Level = level
 	entry.Time = time.Now()
@@ -89,19 +93,19 @@ func (l *Logger) output(level Level, message Message) error {
 	entry.Labels = l.labels
 
 	if l.sampler != nil && !l.sampler.Sample(entry) {
-		pool.entry.Free(entry)
+		pool.Entry.Free(entry)
 		return nil
 	}
 	if l.addSource {
 		entry.SourceLocation = newEntrySourceLocation(
-			runtime.Caller(2))
+			runtime.Caller(stacks))
 	}
 
 	for index := 0; index < len(l.hooks); index++ {
 		err := l.hooks[index].Print(entry)
 
 		if err != nil {
-			pool.entry.Free(entry)
+			pool.Entry.Free(entry)
 			return err
 		}
 	}
@@ -109,19 +113,19 @@ func (l *Logger) output(level Level, message Message) error {
 		err := l.exporters[index].Export(entry)
 
 		if err != nil {
-			pool.entry.Free(entry)
+			pool.Entry.Free(entry)
 			return err
 		}
 	}
 
-	pool.entry.Free(entry)
+	pool.Entry.Free(entry)
 	return nil
 }
 
 // Print outputs log entries for a given log level and message, and then
 // returns any errors encountered.
 func (l *Logger) Print(level Level, message Message) error {
-	return l.output(level, message)
+	return l.Output(2, level, message)
 }
 
 // Option is a structure that contains options for the logger.
@@ -272,36 +276,38 @@ type StandardLogger struct {
 	contextCancel context.CancelFunc
 	contextWaitGroup *sync.WaitGroup
 	contextReferences *int32
+
+	closed int32
 }
 
 // Debug outputs a given log message with a log level of DEBUG, and then
 // returns any errors encountered.
 func (l *StandardLogger) Debug(message Message) error {
-	return l.output(LevelDebug, message)
+	return l.Output(2, LevelDebug, message)
 }
 
 // Info outputs a given log message with a log level of INFO, and then
 // returns any errors encountered.
 func (l *StandardLogger) Info(message Message) error {
-	return l.output(LevelInfo, message)
+	return l.Output(2, LevelInfo, message)
 }
 
 // Warning outputs a given log message with a log level of WARNING, and
 // then returns any errors encountered.
 func (l *StandardLogger) Warning(message Message) error {
-	return l.output(LevelWarning, message)
+	return l.Output(2, LevelWarning, message)
 }
 
 // Error outputs a given log message with a log level of ERROR, and then
 // returns any errors encountered.
 func (l *StandardLogger) Error(message Message) error {
-	return l.output(LevelError, message)
+	return l.Output(2, LevelError, message)
 }
 
 // Fatal outputs a given log message with a log level of FATAL, and then
 // returns any errors encountered.
 func (l *StandardLogger) Fatal(message Message) error {
-	return l.output(LevelFatal, message)
+	return l.Output(2, LevelFatal, message)
 }
 
 // Duplicate creates and returns a copy of the logger. If the logger is
@@ -406,6 +412,9 @@ func (l *StandardLogger) Sync() error {
 // errors are encountered, the state of the application may change. The
 // best practice is to exit the application.
 func (l *StandardLogger) Close() error {
+	if !atomic.CompareAndSwapInt32(&l.closed, 0, 1) {
+		return ErrClosed
+	}
 	references := atomic.AddInt32(l.contextReferences, -1)
 	switch {
 	case references > 0:
@@ -417,18 +426,20 @@ func (l *StandardLogger) Close() error {
 		// logger repeatedly.
 		return ErrClosed
 	}
-
 	l.contextCancel()
 	l.contextWaitGroup.Wait()
-
 	for index := 0; index < len(l.exporters); index++ {
 		err := l.exporters[index].Close()
-
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// IsClosed checks whether the logger instance has been closed.
+func (l *StandardLogger) IsClosed() bool {
+	return atomic.LoadInt32(&l.closed) == 1
 }
 
 // flushHandler calls the Sync function at a given time interval to

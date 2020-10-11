@@ -399,3 +399,18 @@ func TestStandardLoggerDuplicate(t *testing.T) {
 	assert.NoError(t, instance.Close(), "Unexpected close error")
 	assert.NoError(t, logger.Close(), "Unexpected close error")
 }
+
+func TestStandardLoggerClosed(t *testing.T) {
+	logger, err := NewStandard()
+	assert.NoError(t, err, "Unexpected create error")
+	assert.NotNil(t, logger, "Unexpected nil value")
+
+	closed := logger.IsClosed()
+	assert.Equal(t, false, closed, "Unexpected return value")
+
+	err = logger.Close()
+	assert.NoError(t, err, "Unexpected close error")
+
+	closed = logger.IsClosed()
+	assert.Equal(t, true, closed, "Unexpected return value")
+}

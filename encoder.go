@@ -198,13 +198,9 @@ func (e *StandardEncoder) Encode(buffer []byte, entry *Entry) ([]byte, error) {
 		buffer = entry.SourceLocation.AppendString(buffer)
 		buffer = append(buffer, ' ')
 	}
-	if e.option.EncodeLabels {
-		if entry.Labels.Count() == 0 {
-			buffer = append(buffer, "no-labels "...)
-		} else {
-			buffer = entry.Labels.SerializeStandard(buffer)
-			buffer = append(buffer, ' ')
-		}
+	if e.option.EncodeLabels && entry.Labels.Count() > 0 {
+		buffer = entry.Labels.SerializeStandard(buffer)
+		buffer = append(buffer, ' ')
 	}
 	if e.option.EncodeName && len(entry.Name) > 0 {
 		buffer = append(buffer, entry.Name...)

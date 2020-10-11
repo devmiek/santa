@@ -65,9 +65,9 @@ type StructLogger struct {
 // given description text and fields, and then returns any errors
 // encountered.
 func (l *StructLogger) Prints(level Level, text string, fields ...Field) error {
-	message := pool.message.structure.New(text, fields)
-	err := l.output(level, message)
-	pool.message.structure.Free(message)
+	message := pool.Message.Structure.New(text, fields)
+	err := l.Output(2, level, message)
+	pool.Message.Structure.Free(message)
 	return err
 }
 
@@ -75,9 +75,9 @@ func (l *StructLogger) Prints(level Level, text string, fields ...Field) error {
 // given description text and fields, and then returns any errors
 // encountered.
 func (l *StructLogger) Debugs(text string, fields ...Field) error {
-	message := pool.message.structure.New(text, fields)
-	err := l.output(LevelDebug, message)
-	pool.message.structure.Free(message)
+	message := pool.Message.Structure.New(text, fields)
+	err := l.Output(2, LevelDebug, message)
+	pool.Message.Structure.Free(message)
 	return err
 }
 
@@ -85,9 +85,9 @@ func (l *StructLogger) Debugs(text string, fields ...Field) error {
 // given description text and fields, and then returns any errors
 // encountered.
 func (l *StructLogger) Infos(text string, fields ...Field) error {
-	message := pool.message.structure.New(text, fields)
-	err := l.output(LevelInfo, message)
-	pool.message.structure.Free(message)
+	message := pool.Message.Structure.New(text, fields)
+	err := l.Output(2, LevelInfo, message)
+	pool.Message.Structure.Free(message)
 	return err
 }
 
@@ -95,9 +95,9 @@ func (l *StructLogger) Infos(text string, fields ...Field) error {
 // given description text and fields, and then returns any errors
 // encountered.
 func (l *StructLogger) Warnings(text string, fields ...Field) error {
-	message := pool.message.structure.New(text, fields)
-	err := l.output(LevelWarning, message)
-	pool.message.structure.Free(message)
+	message := pool.Message.Structure.New(text, fields)
+	err := l.Output(2, LevelWarning, message)
+	pool.Message.Structure.Free(message)
 	return err
 }
 
@@ -105,9 +105,9 @@ func (l *StructLogger) Warnings(text string, fields ...Field) error {
 // given description text and fields, and then returns any errors
 // encountered.
 func (l *StructLogger) Errors(text string, fields ...Field) error {
-	message := pool.message.structure.New(text, fields)
-	err := l.output(LevelError, message)
-	pool.message.structure.Free(message)
+	message := pool.Message.Structure.New(text, fields)
+	err := l.Output(2, LevelError, message)
+	pool.Message.Structure.Free(message)
 	return err
 }
 
@@ -115,9 +115,9 @@ func (l *StructLogger) Errors(text string, fields ...Field) error {
 // given description text and fields, and then returns any errors
 // encountered.
 func (l *StructLogger) Fatals(text string, fields ...Field) error {
-	message := pool.message.structure.New(text, fields)
-	err := l.output(LevelFatal, message)
-	pool.message.structure.Free(message)
+	message := pool.Message.Structure.New(text, fields)
+	err := l.Output(2, LevelFatal, message)
+	pool.Message.Structure.Free(message)
 	return err
 }
 

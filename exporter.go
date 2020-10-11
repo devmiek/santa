@@ -90,22 +90,22 @@ func (e *StandardExporter) Export(entry *Entry) error {
 	if e.encoder == nil {
 		return nil
 	}
-	pointer := pool.buffer.exporter.New()
+	pointer := pool.Buffer.Exporter.New()
 	buffer, err := e.encoder.Encode((*pointer)[ : 0], entry)
 	if err != nil {
-		pool.buffer.exporter.Free(pointer)
+		pool.Buffer.Exporter.Free(pointer)
 		return err
 	}
 	if buffer == nil {
-		pool.buffer.exporter.Free(pointer)
+		pool.Buffer.Exporter.Free(pointer)
 		return nil
 	}
 	if e.syncer == nil {
-		pool.buffer.exporter.Free(pointer)
+		pool.Buffer.Exporter.Free(pointer)
 		return nil
 	}
 	_, err = e.syncer.Write(buffer)
-	pool.buffer.exporter.Free(pointer)
+	pool.Buffer.Exporter.Free(pointer)
 	return err
 }
 

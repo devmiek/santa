@@ -63,9 +63,9 @@ type TemplateLogger struct {
 // template string and one or more parameters, and then returns any errors
 // encountered.
 func (l *TemplateLogger) Printf(level Level, template string, args ...interface { }) error {
-	message := pool.message.template.New(template, args)
-	err := l.output(level, message)
-	pool.message.template.Free(message)
+	message := pool.Message.Template.New(template, args)
+	err := l.Output(2, level, message)
+	pool.Message.Template.Free(message)
 	return err
 }
 
@@ -73,9 +73,9 @@ func (l *TemplateLogger) Printf(level Level, template string, args ...interface 
 // template string and one or more parameters, and then returns any errors
 // encountered.
 func (l *TemplateLogger) Debugf(template string, args ...interface { }) error {
-	message := pool.message.template.New(template, args)
-	err := l.output(LevelDebug, message)
-	pool.message.template.Free(message)
+	message := pool.Message.Template.New(template, args)
+	err := l.Output(2, LevelDebug, message)
+	pool.Message.Template.Free(message)
 	return err
 }
 
@@ -83,9 +83,9 @@ func (l *TemplateLogger) Debugf(template string, args ...interface { }) error {
 // template string and one or more parameters, and then returns any errors
 // encountered.
 func (l *TemplateLogger) Infof(template string, args ...interface { }) error {
-	message := pool.message.template.New(template, args)
-	err := l.output(LevelInfo, message)
-	pool.message.template.Free(message)
+	message := pool.Message.Template.New(template, args)
+	err := l.Output(2, LevelInfo, message)
+	pool.Message.Template.Free(message)
 	return err
 }
 
@@ -93,9 +93,9 @@ func (l *TemplateLogger) Infof(template string, args ...interface { }) error {
 // given template string and one or more parameters, and then returns any
 // errors encountered.
 func (l *TemplateLogger) Warningf(template string, args ...interface { }) error {
-	message := pool.message.template.New(template, args)
-	err := l.output(LevelWarning, message)
-	pool.message.template.Free(message)
+	message := pool.Message.Template.New(template, args)
+	err := l.Output(2, LevelWarning, message)
+	pool.Message.Template.Free(message)
 	return err
 }
 
@@ -103,9 +103,9 @@ func (l *TemplateLogger) Warningf(template string, args ...interface { }) error 
 // template string and one or more parameters, and then returns any errors
 // encountered.
 func (l *TemplateLogger) Errorf(template string, args ...interface { }) error {
-	message := pool.message.template.New(template, args)
-	err := l.output(LevelError, message)
-	pool.message.template.Free(message)
+	message := pool.Message.Template.New(template, args)
+	err := l.Output(2, LevelError, message)
+	pool.Message.Template.Free(message)
 	return err
 }
 
@@ -113,9 +113,9 @@ func (l *TemplateLogger) Errorf(template string, args ...interface { }) error {
 // template string and one or more parameters, and then returns any errors
 // encountered.
 func (l *TemplateLogger) Fatalf(template string, args ...interface { }) error {
-	message := pool.message.template.New(template, args)
-	err := l.output(LevelFatal, message)
-	pool.message.template.Free(message)
+	message := pool.Message.Template.New(template, args)
+	err := l.Output(2, LevelFatal, message)
+	pool.Message.Template.Free(message)
 	return err
 }
 

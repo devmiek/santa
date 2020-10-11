@@ -173,35 +173,52 @@ func (p *ExporterBufferPool) Free(buffer *[]byte) {
 
 // NewExporterBufferPool creates and returns a log entry buffer pool
 // instance.
-func NewExporterBufferPool() *ExporterBufferPool {
+func NewExporterBufferPool(capacity int) *ExporterBufferPool {
 	return &ExporterBufferPool {
 		pool: &sync.Pool {
 			New: func() interface { } {
-				buffer := make([]byte, 0, 2048)
+				buffer := make([]byte, 0, capacity)
 				return &buffer
 			},
 		},
 	}
 }
 
-// pool is a structural variable that contains default instances of
-// various pools. These pool instances are automatically created when
-// the application is initialized and shared globally.
-var pool struct {
-	entry *EntryPool
-	message struct {
-		structure *StructMessagePool
-		template *TemplateMessagePool
+// GlobalPool is a structure that contains default instances of various
+// pools. By using the global pool, some objects that need to be frequently
+// instantiated will be cached in the global pool after use to facilitate
+// reuse, which will significantly reduce the number of heap memory
+// allocations.
+type GlobalPool struct {
+	Entry *EntryPool
+	Message struct {
+		Structure *StructMessagePool
+		Template *TemplateMessagePool
 	}
-	buffer struct {
-		exporter *ExporterBufferPool
+	Buffer struct {
+		Exporter *ExporterBufferPool
 	}
 }
 
-// init is used to initialize the variable pool.
-func init() {
-	pool.entry = NewEntryPool()
-	pool.message.template = NewTemplateMessagePool()
-	pool.message.structure = NewStructMessagePool()
-	pool.buffer.exporter = NewExporterBufferPool()
+// NewGlobalPool creates instances of various pools and returns the value
+// of the global pool. Unless necessary, applications should use
+// GetGlobalPool to obtain the default global pool.
+func NewGlobalPool() GlobalPool {
+	instance := GlobalPool {
+		Entry: NewEntryPool(),
+	}
+	instance.Message.Template = NewTemplateMessagePool()
+	instance.Message.Structure = NewStructMessagePool()
+	instance.Buffer.Exporter = NewExporterBufferPool(2048)
+	return instance
+}
+
+// pool is a structural variable that contains default instances of
+// various pools. These pool instances are automatically created when
+// the application is initialized and shared globally.
+var pool GlobalPool = NewGlobalPool()
+
+// GetGlobalPool returns the value of the default global pool.
+func GetGlobalPool() GlobalPool {
+	return pool
 }
